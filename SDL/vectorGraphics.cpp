@@ -13,12 +13,11 @@
 #include <cmath>
 #include <algorithm>
 #include <unistd.h>
+#include <sys/time.h>
 
 #include <SDL2/SDL.h>
 
 #include "SDL2_gfxPrimitives.h"
-
-
 
 #define WIDTH 400
 #define HEIGHT 400
@@ -212,9 +211,9 @@ Camera::Camera(Point&pos,int rot1,int rot2,SDL_Renderer*surface,int width,int he
 	rotation[0] = rot1; rotation[1] = rot2;
 	renderer = surface;
 	world = w;
-	dotMode = true;
-	wireMode = false;
-	polyMode = false;
+	dotMode = false;
+	wireMode = true;
+	polyMode = true;
 	snakeMode = false;
 	resX = width; resY = height;
 	cx = width/2;
@@ -315,8 +314,8 @@ typedef struct zBuffer{
 void Camera::render(){
 	// Clear screen
 	SDL_SetRenderDrawColor(renderer,255,255,255,255);
-    SDL_RenderClear(renderer);
-    SDL_SetRenderDrawColor(renderer,0,0,0,0);
+	SDL_RenderClear(renderer);
+	SDL_SetRenderDrawColor(renderer,0,0,0,0);
 
 	// Compute screen coords for each vertex in the world
 	vector<Point> screenCoords;
@@ -403,29 +402,44 @@ void Camera::render(){
 			//filledPolygonRGBA(renderer,&faceList[f].x[0],&faceList[f].y[0],faceList[f].x.size(),rand(),rand(),rand(),0xff);
 		}
 	}
+
+	SDL_RenderPresent(renderer);
 }
 
 //#############################################################################################
 
 void loop(SDL_Renderer*renderer,Camera cam){
-
 	SDL_Event ev;
-    for(;;){
+	// cam.update(&ev,(1.0/100));
+	// cam.render();
+	// SDL_RenderPresent(renderer);
 
-    	//SDL_RenderPresent(renderer);
-    	//b1.print();
+	for(;;){
 
-    	while(SDL_PollEvent(&ev)){
-    		cam.update(&ev,(1.0/100));
-    		cam.render();
-    		SDL_RenderPresent(renderer);
-    		switch(ev.type){
+		//SDL_RenderPresent(renderer);
+		//b1.print();
+
+		while(SDL_PollEvent(&ev)){
+			cam.update(&ev,(1.0/100));
+			cam.render();
+			// SDL_RenderPresent(renderer);
+							cout << "fuck off" << endl;
+			switch(ev.type){
 				case SDL_QUIT:{
 					return;
 				}
 				case SDL_KEYDOWN:{
 					switch(ev.key.keysym.sym){
 						case SDLK_ESCAPE: return;
+						case 'h':{
+							timespec t1,t2;
+							clock_gettime(CLOCK_REALTIME, &t1);
+							cam.render();
+							clock_gettime(CLOCK_REALTIME, &t2);
+							cout << t2.tv_sec-t1.tv_sec << " sec";
+							cout << t2.tv_nsec-t1.tv_nsec << " nsec" << endl;
+							break;
+						}
 
 						default:{
 							break;
@@ -434,10 +448,10 @@ void loop(SDL_Renderer*renderer,Camera cam){
 					break;
 				}
 				default: {break;}
-    		}
-    	}
-    	usleep(10000);
-    }
+			}
+		}
+		usleep(10000);
+	}
 }
 
 
@@ -463,6 +477,7 @@ int main(int argc, char** argv) {
 	}
 	//world.printDebug();
 
+	SDL_Init(0);
 	const int width=WIDTH,height=HEIGHT;
 	SDL_Window* window = SDL_CreateWindow
 	(
@@ -472,23 +487,25 @@ int main(int argc, char** argv) {
 		height,
 		SDL_WINDOW_SHOWN
 	);
-
-    SDL_Renderer*renderer=SDL_CreateRenderer(window,-1,SDL_RENDERER_ACCELERATED);
+	SDL_Renderer*renderer=SDL_CreateRenderer(window,-1,SDL_RENDERER_ACCELERATED);
+	ofstream ctt("CON");
+	freopen( "CON", "w", stdout );
+	freopen( "CON", "w", stderr );
 
 	// Create camera
-    Point camPos(0,0,-5);
+	Point camPos(0,0,-5);
 	Camera camera(camPos,0,0,renderer,width,height,world);
 
-    //Black screen
-    SDL_SetRenderDrawColor(renderer,0,0,0,0);
-    SDL_RenderClear(renderer);
-    SDL_RenderPresent(renderer);
-    SDL_SetRenderDrawColor(renderer,255,255,255,255);
+	//Black screen
+	SDL_SetRenderDrawColor(renderer,0,0,0,0);
+	SDL_RenderClear(renderer);
+	SDL_RenderPresent(renderer);
+	SDL_SetRenderDrawColor(renderer,255,255,255,255);
 
-    loop(renderer,camera);
+	loop(renderer,camera);
 
-    SDL_DestroyWindow(window);
-    SDL_Quit();
+	SDL_DestroyWindow(window);
+	SDL_Quit();
 
 	return 0;
 }

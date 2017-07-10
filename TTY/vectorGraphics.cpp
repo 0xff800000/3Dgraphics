@@ -23,8 +23,8 @@
 #define M_PI_2  1.57079632679489661923
 #define M_PI_4  0.785398163397448309616
 */
-#define WIDTH 1920
-#define HEIGHT 1080
+#define WIDTH 1600
+#define HEIGHT 900
 
 using namespace std;
 
@@ -47,8 +47,8 @@ struct fbPix* colors[] = {&cRed,&cGreen,&cBlue,&cWhite,&cBlack};
 int cSize = sizeof(colors) / sizeof(colors[0]);
 
 // Screen resolution
-#define resW 1920
-#define resH 1080
+#define resW 1600
+#define resH 900
 
 // Frame buffer data
 char fbData[resW*resH*4];
