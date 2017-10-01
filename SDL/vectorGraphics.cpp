@@ -32,6 +32,8 @@ public:
 	float y;
 	float z;
 
+	bool valid;
+
 	void rotX(float);
 	void rotY(float);
 	void rotZ(float);
@@ -42,7 +44,7 @@ public:
 	bool disp2D();
 
 	Point();
-	Point(float,float,float);
+	Point(float,float,float,bool);
 };
 
 void Point::rotX(float rad){
@@ -82,11 +84,11 @@ bool Point::disp2D(){
 }
 
 Point::Point(){
-	this->x=0.0;this->y=0.0;this->z=0.0;
+	this->x=0.0;this->y=0.0;this->z=0.0;valid = false;
 }
 
-Point::Point(float xVal,float yVal,float zVal){
-	this->x=xVal;this->y=yVal;this->z=zVal;
+Point::Point(float xVal,float yVal,float zVal, bool v=false){
+	this->x=xVal;this->y=yVal;this->z=zVal;valid = v;
 }
 
 //###################################### World Class #######################################################
@@ -322,24 +324,26 @@ void Camera::render(){
 	vector<bool> validVertex;
 	for(unsigned i=0; i<world.vertex.size(); i++){
 		float x,y,z;
+		bool validity=false;
 		getScreenCoord(world.vertex[i],&x,&y,&z);
 		// Clip points
-		//if((x>0) && (x<WIDTH) && (y>0) && (y<HEIGHT) && (z<0)) screenCoords.push_back(Point(x,y,z));
-		screenCoords.push_back(Point(x,y,z));
-		if(/*(x>0) && (x<WIDTH) && (y>0) && (y<HEIGHT) && */(z<0.0))validVertex.push_back(true);
-		else validVertex.push_back(false);
-		// Render points
-		if(dotMode){
-			if(validVertex[i]){
-				SDL_RenderDrawPoint(renderer,(int)x,(int)y);
+		if((z<0.0))validity=true;
+		screenCoords.push_back(Point(x,y,z,validity));
+	}
+	// Render points
+	if(dotMode){
+		for(unsigned i=1; i<screenCoords.size(); i++){
+			if(screenCoords[i].valid){
+				SDL_RenderDrawPoint(renderer,(int)screenCoords[i].x,(int)screenCoords[i].y);
 				//filledCircleRGBA(renderer,(int)x,(int)y,2,0x00,0x00,0x00,0xff);
 			}
 		}
 	}
+
 	// Render snake
 	if(snakeMode){
 		for(unsigned i=1; i<screenCoords.size(); i++){
-			if(screenCoords[i].z<0.0 && screenCoords[i-1].z<0.0){
+			if(screenCoords[i].valid && screenCoords[i-1].valid){
 				SDL_RenderDrawLine(renderer,(int)screenCoords[i].x,(int)screenCoords[i].y,(int)screenCoords[i-1].x,(int)screenCoords[i-1].y);
 				//thickLineRGBA(renderer,(int)screenCoords[i].x,(int)screenCoords[i].y,(int)screenCoords[i-1].x,(int)screenCoords[i-1].y,3,0,0,0,0xff);
 			}
@@ -350,7 +354,7 @@ void Camera::render(){
 	if(wireMode){
 		for(unsigned f=0; f<world.face.size(); f++){
 			for(unsigned v=1; v<world.face[f].edges.size(); v++){
-				if(screenCoords[world.face[f].edges[v]].z<0 && screenCoords[world.face[f].edges[v-1]].z<0){
+				if(screenCoords[world.face[f].edges[v]].valid && screenCoords[world.face[f].edges[v-1]].valid){
 					int vertex1 = world.face[f].edges[v];
 					int vertex2 = world.face[f].edges[v-1];
 					SDL_RenderDrawLine(renderer,(int)screenCoords[vertex1].x,(int)screenCoords[vertex1].y,(int)screenCoords[vertex2].x,(int)screenCoords[vertex2].y);
