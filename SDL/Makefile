@@ -1,6 +1,6 @@
 CC = g++
-CFLAGS = -W -Wall -O3
-LDFLAGS = -lSDL2main -lSDL2 -lstdc++
+CFLAGS = -W -Wall -O3 -g
+LDFLAGS = -lSDL2main -lSDL2 -lstdc++ -lpthread
 EXEC = vectorGraphics
 
 all: $(EXEC)

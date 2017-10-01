@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <unistd.h>
 #include <sys/time.h>
+#include <pthread.h>
 
 #include <SDL2/SDL.h>
 
@@ -313,26 +314,64 @@ typedef struct zBuffer{
 	}
 };
 
+struct thread_wire {
+	SDL_Renderer*renderer;
+	World world;
+	vector<Point> screenCoords;
+	int start;
+	int stop;
+};
+
+void *renderWire(void *threadarg){
+	struct thread_wire * data;
+	data = (struct thread_wire *) threadarg;
+
+	for(unsigned f=data->start; f<data->stop; f++){
+		for(unsigned v=1; v<data->world.face[f].edges.size(); v++){
+			if(data->screenCoords[data->world.face[f].edges[v]].valid && data->screenCoords[data->world.face[f].edges[v-1]].valid){
+				int vertex1 = data->world.face[f].edges[v];
+				int vertex2 = data->world.face[f].edges[v-1];
+				SDL_RenderDrawLine(data->renderer,(int)data->screenCoords[vertex1].x,(int)data->screenCoords[vertex1].y,(int)data->screenCoords[vertex2].x,(int)data->screenCoords[vertex2].y);
+			}
+		}
+	}
+	pthread_exit(NULL);
+}
+
+void *renderSnake(void *threadarg){
+	struct thread_wire * data;
+	data = (struct thread_wire *) threadarg;
+
+	for(unsigned i=data->start; i<data->stop; i++){
+		if(data->screenCoords[i].valid && data->screenCoords[i-1].valid){
+			SDL_RenderDrawLine(data->renderer,(int)data->screenCoords[i].x,(int)data->screenCoords[i].y,(int)data->screenCoords[i-1].x,(int)data->screenCoords[i-1].y);
+		}
+	}
+	pthread_exit(NULL);
+}
+
 void Camera::render(){
 	// Clear screen
 	SDL_SetRenderDrawColor(renderer,255,255,255,255);
 	SDL_RenderClear(renderer);
 	SDL_SetRenderDrawColor(renderer,0,0,0,0);
 
+	vector<Point> screenCoords(world.vertex.size());
+	
+	const unsigned nb_thread = 10;
+
 	// Compute screen coords for each vertex in the world
-	vector<Point> screenCoords;
-	vector<bool> validVertex;
 	for(unsigned i=0; i<world.vertex.size(); i++){
 		float x,y,z;
 		bool validity=false;
 		getScreenCoord(world.vertex[i],&x,&y,&z);
 		// Clip points
 		if((z<0.0))validity=true;
-		screenCoords.push_back(Point(x,y,z,validity));
+		screenCoords[i] = Point(x,y,z,validity);
 	}
 	// Render points
 	if(dotMode){
-		for(unsigned i=1; i<screenCoords.size(); i++){
+		for(unsigned i=0; i<screenCoords.size(); i++){
 			if(screenCoords[i].valid){
 				SDL_RenderDrawPoint(renderer,(int)screenCoords[i].x,(int)screenCoords[i].y);
 				//filledCircleRGBA(renderer,(int)x,(int)y,2,0x00,0x00,0x00,0xff);
@@ -342,25 +381,66 @@ void Camera::render(){
 
 	// Render snake
 	if(snakeMode){
-		for(unsigned i=1; i<screenCoords.size(); i++){
-			if(screenCoords[i].valid && screenCoords[i-1].valid){
-				SDL_RenderDrawLine(renderer,(int)screenCoords[i].x,(int)screenCoords[i].y,(int)screenCoords[i-1].x,(int)screenCoords[i-1].y);
-				//thickLineRGBA(renderer,(int)screenCoords[i].x,(int)screenCoords[i].y,(int)screenCoords[i-1].x,(int)screenCoords[i-1].y,3,0,0,0,0xff);
+		pthread_t threads_wire[nb_thread];
+		struct thread_wire td[nb_thread];
+		int rc;
+		void *status;
+		int elem_per_thread = screenCoords.size()/nb_thread;
+		int rem = screenCoords.size()%nb_thread;
+		// Create threads
+		for(unsigned i=0; i<nb_thread; i++){
+			td->renderer = renderer;
+			td->world = world;
+			td->screenCoords = screenCoords;
+			td->start = (int)i*elem_per_thread+1;
+			td->stop = (int)(i+1)*elem_per_thread+rem;
+
+			rc = pthread_create(&threads_wire[i], NULL,renderSnake,(void *)&td[i]);
+			if (rc) {
+				while(1);
+				cout << "Error:unable to create thread," << rc << endl;
+				exit(-1);
+			}
+			//pthread_exit(NULL);
+		}
+		// Join threads
+		for(unsigned i = 0; i < nb_thread; i++ ) {
+			rc = pthread_join(threads_wire[i], &status);
+			if (rc) {
+				cout << "Error:unable to join," << rc << endl;
+				exit(-1);
 			}
 		}
 	}
 
 	// Render wireframe
-	if(wireMode){
-		for(unsigned f=0; f<world.face.size(); f++){
-			for(unsigned v=1; v<world.face[f].edges.size(); v++){
-				if(screenCoords[world.face[f].edges[v]].valid && screenCoords[world.face[f].edges[v-1]].valid){
-					int vertex1 = world.face[f].edges[v];
-					int vertex2 = world.face[f].edges[v-1];
-					SDL_RenderDrawLine(renderer,(int)screenCoords[vertex1].x,(int)screenCoords[vertex1].y,(int)screenCoords[vertex2].x,(int)screenCoords[vertex2].y);
-				}
+	if(wireMode&&false){
+		pthread_t threads_wire[nb_thread];
+		struct thread_wire td[nb_thread];
+		int rc;
+		for(unsigned i=0; i<nb_thread; i++){
+			td->renderer = renderer;
+			td->world = world;
+			td->screenCoords = screenCoords;
+			td->start = 0;
+			td->stop = world.face.size();
+
+			rc = pthread_create(&threads_wire[i], NULL,renderWire,(void *)&td[i]);
+			if (rc) {
+				cout << "Error:unable to create thread," << rc << endl;
+				exit(-1);
 			}
+			pthread_exit(NULL);
 		}
+		// for(unsigned f=0; f<world.face.size(); f++){
+		// 	for(unsigned v=1; v<world.face[f].edges.size(); v++){
+		// 		if(screenCoords[world.face[f].edges[v]].valid && screenCoords[world.face[f].edges[v-1]].valid){
+		// 			int vertex1 = world.face[f].edges[v];
+		// 			int vertex2 = world.face[f].edges[v-1];
+		// 			SDL_RenderDrawLine(renderer,(int)screenCoords[vertex1].x,(int)screenCoords[vertex1].y,(int)screenCoords[vertex2].x,(int)screenCoords[vertex2].y);
+		// 		}
+		// 	}
+		// }
 	}
 
 	// Render polygon
