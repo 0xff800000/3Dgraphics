@@ -328,9 +328,9 @@ void *renderWire(void *threadarg){
 
 	for(unsigned f=data->start; f<data->stop; f++){
 		for(unsigned v=1; v<data->world.face[f].edges.size(); v++){
-			if(data->screenCoords[data->world.face[f].edges[v]].valid && data->screenCoords[data->world.face[f].edges[v-1]].valid){
-				int vertex1 = data->world.face[f].edges[v];
-				int vertex2 = data->world.face[f].edges[v-1];
+			int vertex1 = data->world.face[f].edges[v];
+			int vertex2 = data->world.face[f].edges[v-1];
+			if(data->screenCoords[vertex1].valid && data->screenCoords[vertex2].valid){
 				SDL_RenderDrawLine(data->renderer,(int)data->screenCoords[vertex1].x,(int)data->screenCoords[vertex1].y,(int)data->screenCoords[vertex2].x,(int)data->screenCoords[vertex2].y);
 			}
 		}
@@ -341,10 +341,12 @@ void *renderWire(void *threadarg){
 void *renderSnake(void *threadarg){
 	struct thread_wire * data;
 	data = (struct thread_wire *) threadarg;
+	if(data == 0)exit(-10);
 
 	for(unsigned i=data->start; i<data->stop; i++){
 		if(data->screenCoords[i].valid && data->screenCoords[i-1].valid){
 			SDL_RenderDrawLine(data->renderer,(int)data->screenCoords[i].x,(int)data->screenCoords[i].y,(int)data->screenCoords[i-1].x,(int)data->screenCoords[i-1].y);
+			//printf("\n");
 		}
 	}
 	pthread_exit(NULL);
@@ -357,8 +359,8 @@ void Camera::render(){
 	SDL_SetRenderDrawColor(renderer,0,0,0,0);
 
 	vector<Point> screenCoords(world.vertex.size());
-	
-	const unsigned nb_thread = 10;
+
+	const unsigned nb_thread = 2;
 
 	// Compute screen coords for each vertex in the world
 	for(unsigned i=0; i<world.vertex.size(); i++){
@@ -389,11 +391,11 @@ void Camera::render(){
 		int rem = screenCoords.size()%nb_thread;
 		// Create threads
 		for(unsigned i=0; i<nb_thread; i++){
-			td->renderer = renderer;
-			td->world = world;
-			td->screenCoords = screenCoords;
-			td->start = (int)i*elem_per_thread+1;
-			td->stop = (int)(i+1)*elem_per_thread+rem;
+			td[i].renderer = renderer;
+			td[i].world = world;
+			td[i].screenCoords = screenCoords;
+			td[i].start = (int)i*elem_per_thread+1;
+			td[i].stop = (int)(i+1)*elem_per_thread+rem;
 
 			rc = pthread_create(&threads_wire[i], NULL,renderSnake,(void *)&td[i]);
 			if (rc) {
@@ -418,12 +420,14 @@ void Camera::render(){
 		pthread_t threads_wire[nb_thread];
 		struct thread_wire td[nb_thread];
 		int rc;
+		int elem_per_thread = world.face.size()/nb_thread;
+		int rem = world.face.size()%nb_thread;
 		for(unsigned i=0; i<nb_thread; i++){
-			td->renderer = renderer;
-			td->world = world;
-			td->screenCoords = screenCoords;
-			td->start = 0;
-			td->stop = world.face.size();
+			td[i].renderer = renderer;
+			td[i].world = world;
+			td[i].screenCoords = screenCoords;
+			td[i].start = (int)i*elem_per_thread;
+			td[i].stop = (int)(i+1)*elem_per_thread+rem;
 
 			rc = pthread_create(&threads_wire[i], NULL,renderWire,(void *)&td[i]);
 			if (rc) {
@@ -434,9 +438,9 @@ void Camera::render(){
 		}
 		// for(unsigned f=0; f<world.face.size(); f++){
 		// 	for(unsigned v=1; v<world.face[f].edges.size(); v++){
-		// 		if(screenCoords[world.face[f].edges[v]].valid && screenCoords[world.face[f].edges[v-1]].valid){
-		// 			int vertex1 = world.face[f].edges[v];
-		// 			int vertex2 = world.face[f].edges[v-1];
+		// 		int vertex1 = world.face[f].edges[v];
+		// 		int vertex2 = world.face[f].edges[v-1];
+		// 		if(screenCoords[vertex1].valid && screenCoords[vertex2].valid){
 		// 			SDL_RenderDrawLine(renderer,(int)screenCoords[vertex1].x,(int)screenCoords[vertex1].y,(int)screenCoords[vertex2].x,(int)screenCoords[vertex2].y);
 		// 		}
 		// 	}
@@ -459,7 +463,7 @@ void Camera::render(){
 			}
 			currentFace.x = x;
 			currentFace.y = y;
-			currentFace.z = *min_element(&zbuff[0],&zbuff[zbuff.size()]);
+			currentFace.z = *max_element(&zbuff[0],&zbuff[zbuff.size()]);
 
 			// Get face color
 			//world.getColor(f,&currentFace.r,&currentFace.g,&currentFace.b);
@@ -504,10 +508,9 @@ void loop(SDL_Renderer*renderer,Camera cam){
 		//b1.print();
 
 		while(SDL_PollEvent(&ev)){
-			cam.update(&ev,(1.0/100));
 			cam.render();
+			cam.update(&ev,(1.0/100));
 			// SDL_RenderPresent(renderer);
-							cout << "fuck off" << endl;
 			switch(ev.type){
 				case SDL_QUIT:{
 					return;
