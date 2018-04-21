@@ -12,6 +12,8 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
+#include <limits>
+
 #include <unistd.h>
 #include <sys/time.h>
 
@@ -91,18 +93,97 @@ Point::Point(float xVal,float yVal,float zVal, bool v=false){
 	this->x=xVal;this->y=yVal;this->z=zVal;valid = v;
 }
 
-//###################################### World Class #######################################################
-
+//###################################### Mesh Class #######################################################
 typedef struct{
 	vector<int> edges;
 	unsigned color[3];
 }polygon;
 
+class Mesh {
+public:
+	string name;
+	Point pos;
+	vector<Point> vertex;
+	vector<polygon> face;
+	Mesh(){
+		pos.x=0;
+		pos.y=0;
+		pos.z=0;
+		//box.push_back(8);
+	};
+	vector<Point> getBox(){return box;};
+	virtual ~Mesh (){};
+	void computeBox();
+	void printDebug();
+private:
+	vector<Point> box;
+};
+
+void Mesh::computeBox(){
+	cout<<"initMesh " <<name<< endl;
+	// Find Min and Max of X,Y,Z
+	float x_min=std::numeric_limits<float>::max(),y_min=std::numeric_limits<float>::max(),z_min=std::numeric_limits<float>::max();
+	float x_max=-std::numeric_limits<float>::max(),y_max=-std::numeric_limits<float>::max(),z_max=-std::numeric_limits<float>::max();
+	for(Point v : vertex){
+		if(x_min>v.x)x_min=v.x;
+		if(y_min>v.y)y_min=v.y;
+		if(z_min>v.z)z_min=v.z;
+		if(x_max<v.x)x_max=v.x;
+		if(y_max<v.y)y_max=v.y;
+		if(z_max<v.z)z_max=v.z;
+	}
+	//cout <<"minmax:"<< x_min<<":" << x_max<<endl;
+
+	// Create box
+	box.push_back(Point(x_min,y_min,z_min));
+	box.push_back(Point(x_max,y_min,z_min));
+	box.push_back(Point(x_min,y_min,z_max));
+	box.push_back(Point(x_max,y_min,z_max));
+	box.push_back(Point(x_min,y_max,z_min));
+	box.push_back(Point(x_max,y_max,z_min));
+	box.push_back(Point(x_min,y_max,z_max));
+	box.push_back(Point(x_max,y_max,z_max));
+
+	// box[0] = Point(x_min,y_min,z_min);
+	// box[1] = Point(x_max,y_min,z_min);
+	// box[2] = Point(x_min,y_min,z_max);
+	// box[3] = Point(x_max,y_min,z_max);
+	// box[4] = Point(x_min,y_max,z_min);
+	// box[5] = Point(x_max,y_max,z_min);
+	// box[6] = Point(x_min,y_max,z_max);
+	// box[7] = Point(x_max,y_max,z_max);
+
+	// Create box
+	// box[0].x=x_min;box[0].y=y_min;box[0].z=z_min;
+	// box[1].x=x_max;box[1].y=y_min;box[1].z=z_min;
+	// box[2].x=x_min;box[2].y=y_min;box[2].z=z_max;
+	// box[3].x=x_max;box[3].y=y_min;box[3].z=z_max;
+	// box[4].x=x_min;box[4].y=y_max;box[4].z=z_min;
+	// box[5].x=x_max;box[5].y=y_max;box[5].z=z_min;
+	// box[6].x=x_min;box[6].y=y_max;box[6].z=z_max;
+	// box[7].x=x_max;box[7].y=y_max;box[7].z=z_max;
+	// for(Point pt : box)
+	// cout<<pt.x<<":"<<pt.y<<":"<<pt.z << endl;
+}
+
+void Mesh::printDebug(){
+	cout << "Object name : " << name << endl;
+	for(Point pt : box){
+		cout << pt.x << ":" << pt.y << ":" << pt.z << endl;
+	}
+}
+
+//###################################### World Class #######################################################
+
+
 class World{
 private:
+	vector<Mesh> meshes;
 public:
 	void importMesh(string&,float);
 	void printDebug();
+	void initMesh();
+	vector<Mesh> getMeshes(){return meshes;};
 	vector<Point> vertex;
 	vector<polygon> face;
 };
@@ -113,69 +194,93 @@ void World::importMesh(string&path,float scale=1.0){
 	string line;
 	if(objFile.is_open()){
 		while(getline(objFile,line)){
-			//cout << line << endl;
 			char str[10];
 			float x,y,z;
-			sscanf(&line[0],"%s %f %f %f",str,&x,&y,&z);
-			//cout << str << endl;
-			if(strcmp(str,"v")==0){
-				// Vertex definition
-				//printf("Vertex : %f, %f, %f\n",x,y,z);
-				Point pt(x,y,z);
-				pt.scale(scale);
-				vertex.push_back(pt);
-			}
-			else if(strcmp(str,"f")==0){
-				// Face definition
-				//cout << line<<endl;
-				polygon poly;
-				char delim[] = "//";
-				char*token;
-				int vertexIndex;
-				token = strtok(&line[0], delim);
-				while(token != NULL){
-					if(sscanf(token,"%*s %d",&vertexIndex)){
-						//cout << vertexIndex << endl;
-						poly.edges.push_back(vertexIndex-1);
-					}
-					else break;
-					token = strtok(NULL, delim);
+			if(sscanf(&line[0],"o %s",str)){
+				// New object definition
+				meshes.push_back(Mesh());
+				meshes.back().name = str;
 
+			}
+			else if(sscanf(&line[0],"%s %f %f %f",str,&x,&y,&z)){
+				if(strcmp(str,"v")==0){
+					// Vertex definition
+					//printf("Vertex : %f, %f, %f\n",x,y,z);
+					Point pt(x,y,z);
+					pt.scale(scale);
+					vertex.push_back(pt);
+					meshes.back().vertex.push_back(pt);
 				}
-				//cout << endl << endl;
-				poly.edges.push_back(poly.edges[0]);
-				/*
-				cout << "Line : "<<line<<endl;
-				for(unsigned i=0; i<poly.edges.size(); i++)printf("%d ,",poly.edges[i]);
-				cout << endl << endl;
-				*/
-				poly.color[0] = rand();
-				poly.color[1] = rand();
-				poly.color[2] = rand();
-				//cout<<poly.color<<endl;
-				face.push_back(poly);
+				else if(strcmp(str,"f")==0){
+					// Face definition
+					polygon poly;
+					char delim[] = "//";
+					char*token;
+					int vertexIndex;
+					token = strtok(&line[0], delim);
+					while(token != NULL){
+						if(sscanf(token,"%*s %d",&vertexIndex)){
+							poly.edges.push_back(vertexIndex-1);
+						}
+						else break;
+						token = strtok(NULL, delim);
+
+					}
+					//cout << endl << endl;
+					poly.edges.push_back(poly.edges[0]);
+					/*
+					cout << "Line : "<<line<<endl;
+					for(unsigned i=0; i<poly.edges.size(); i++)printf("%d ,",poly.edges[i]);
+					cout << endl << endl;
+					*/
+					poly.color[0] = rand();
+					poly.color[1] = rand();
+					poly.color[2] = rand();
+					//cout<<poly.color<<endl;
+					face.push_back(poly);
+					meshes.back().face.push_back(poly);
+				}
 			}
 		}
 	}
 	else {
 		cout << "Error while opening " << path << endl;
 	}
+
+	objFile.close();
+}
+
+void World::initMesh(){
+	for(Mesh m : meshes){
+		m.computeBox();
+		m.printDebug();
+	}
 }
 
 void World::printDebug(){
 	printf("The world contains %d vertexes forming %d faces.\n",vertex.size(),face.size());
-	cout << "Vertex list:" << endl;
-	for(unsigned int i=0;i<vertex.size(); i++){
-		printf("%i : %f,%f,%f\n",i,vertex[i].x,vertex[i].y,vertex[i].z);
+	// cout << "Vertex list:" << endl;
+	// for(unsigned int i=0;i<vertex.size(); i++){
+	// 	printf("%i : %f,%f,%f\n",i,vertex[i].x,vertex[i].y,vertex[i].z);
+	// }
+	// cout << "\n\nFace list:" << endl;
+	// for(unsigned int i=0;i<face.size(); i++){
+	// 	cout << i << " : ";
+	// 	for(unsigned int j=0; j<face[i].edges.size(); j++){
+	// 		cout<<face[i].edges[j]<<",";
+	// 	}
+	// 	cout<<endl;
+	// }
+
+	printf("The world contains %d objects.\n",meshes.size());
+	cout << "Object list :" << endl;
+	for(Mesh m : meshes){
+		cout << m.name << ":v="<<m.vertex.size()<<endl;
+		for(auto pt : m.getBox())
+			cout<<pt.x<<":"<<pt.y<<":"<<pt.z << endl;
+
 	}
-	cout << "\n\nFace list:" << endl;
-	for(unsigned int i=0;i<face.size(); i++){
-		cout << i << " : ";
-		for(unsigned int j=0; j<face[i].edges.size(); j++){
-			cout<<face[i].edges[j]<<",";
-		}
-		cout<<endl;
-	}
+	//cout<<meshes[0].box[0].x<<meshes[0].box[0].y<<meshes[0].box[0].z<<endl;
 
 }
 
@@ -213,6 +318,7 @@ Camera::Camera(Point&pos,int rot1,int rot2,SDL_Renderer*surface,int width,int he
 	rotation[0] = rot1; rotation[1] = rot2;
 	renderer = surface;
 	world = w;
+	world.initMesh();
 	dotMode = false;
 	wireMode = true;
 	polyMode = true;
@@ -314,10 +420,28 @@ typedef struct zBuffer{
 };
 
 void Camera::render(){
+	cout<<"@@@@@@@ Rendering @@@@@@@@"<<endl;
 	// Clear screen
 	SDL_SetRenderDrawColor(renderer,255,255,255,255);
 	SDL_RenderClear(renderer);
 	SDL_SetRenderDrawColor(renderer,0,0,0,0);
+
+	// Get meshes in camera view
+	vector<Mesh> mesh;
+	for(Mesh m : world.getMeshes()){
+		float x,y,z;
+		cout << "Check the objects\n";
+		for(Point pt : m.getBox()){
+			m.printDebug();
+			getScreenCoord(pt,&x,&y,&z);
+			cout << x << ":"<<y<<endl;
+			if(x>=0&&x<=resX&&y>=0&&y<=resY&&z<0){
+				mesh.push_back(m);
+				cout << m.name << " is valid" << endl;
+				break;
+			}
+		}
+	}
 
 	// Compute screen coords for each vertex in the world
 	vector<Point> screenCoords;
@@ -414,9 +538,9 @@ void Camera::render(){
 
 void loop(SDL_Renderer*renderer,Camera cam){
 	SDL_Event ev;
-	// cam.update(&ev,(1.0/100));
-	// cam.render();
-	// SDL_RenderPresent(renderer);
+	cam.update(&ev,(1.0/100));
+	cam.render();
+	SDL_RenderPresent(renderer);
 
 	for(;;){
 
@@ -427,7 +551,6 @@ void loop(SDL_Renderer*renderer,Camera cam){
 			cam.update(&ev,(1.0/100));
 			cam.render();
 			// SDL_RenderPresent(renderer);
-							cout << "fuck off" << endl;
 			switch(ev.type){
 				case SDL_QUIT:{
 					return;
@@ -479,9 +602,8 @@ int main(int argc, char** argv) {
 	else{
 		world.importMesh(path);
 	}
-	//world.printDebug();
+	world.printDebug();
 
-	SDL_Init(0);
 	const int width=WIDTH,height=HEIGHT;
 	SDL_Window* window = SDL_CreateWindow
 	(
@@ -492,9 +614,6 @@ int main(int argc, char** argv) {
 		SDL_WINDOW_SHOWN
 	);
 	SDL_Renderer*renderer=SDL_CreateRenderer(window,-1,SDL_RENDERER_ACCELERATED);
-	ofstream ctt("CON");
-	freopen( "CON", "w", stdout );
-	freopen( "CON", "w", stderr );
 
 	// Create camera
 	Point camPos(0,0,-5);

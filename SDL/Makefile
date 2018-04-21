@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -W -Wall -O3
+CFLAGS = -W -Wall -O3 -std=c++11 -g
 LDFLAGS = -lSDL2main -lSDL2 -lstdc++
 EXEC = vectorGraphics
 
@@ -13,3 +13,8 @@ vectorGraphics.o: vectorGraphics.cpp
 
 SDL2_gfxPrimitives.o: SDL2_gfxPrimitives.c SDL2_gfxPrimitives.h
 	$(CC) -c $< -o $@ $(CFLAGS) $(LDFLAGS)
+
+
+clean:
+	rm *.o
+	rm $(EXEC)
