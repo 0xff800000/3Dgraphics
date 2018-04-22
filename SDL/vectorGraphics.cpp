@@ -110,6 +110,7 @@ public:
 	virtual ~Mesh (){};
 	void computeBox();
 	void printDebug();
+	void zeroEdge();
 private:
 	vector<Point> box;
 };
@@ -178,6 +179,27 @@ void Mesh::computeBox(){
 	// box[7].x=x_max;box[7].y=y_max;box[7].z=z_max;
 	// for(Point pt : box)
 	// cout<<pt.x<<":"<<pt.y<<":"<<pt.z << endl;
+}
+
+void Mesh::zeroEdge(){
+	// Find minimum index
+	int minI = 0x7fffffff;
+	for(polygon f : face){
+		for(int i : f.edges){
+			if(i<minI) minI = i;
+		}
+	}
+	//minI--;
+	//cout<<"Minimum :"<<minI<<endl;
+	// Substract the index
+	for(polygon&f : face){
+		for(int&i : f.edges){
+			i -= minI;
+			//cout<<i<<endl;
+			//if(i>vertex.size())cout<<"error"<<endl;
+		}
+	}
+	//cout<<"first:"<<face[0].edges[0]<<endl;
 }
 
 void Mesh::printDebug(){
@@ -261,12 +283,14 @@ void World::importMesh(string&path,float scale=1.0){
 		cout << "Error while opening " << path << endl;
 	}
 
+	initMesh();
 	objFile.close();
 }
 
 void World::initMesh(){
-	for(Mesh m : meshes){
+	for(Mesh& m : meshes){
 		m.computeBox();
+		m.zeroEdge();
 		m.printDebug();
 	}
 }
@@ -439,18 +463,17 @@ void Camera::render(){
 	SDL_SetRenderDrawColor(renderer,255,255,255,255);
 	SDL_RenderClear(renderer);
 	SDL_SetRenderDrawColor(renderer,0,0,0,0);
-	world.initMesh();
 	// Get meshes in camera view
 	vector<Mesh> mesh;
 	for(Mesh m : world.getMeshes()){
 		float x,y,z;
 		cout << "Check the objects\n";
 		vector<Point> v = m.getBox();
-		cout << v.size() << endl;
-		for(Point pt : m.getBox()){
-			m.printDebug();
+		//cout << v.size() << endl;
+		for(Point& pt : m.getBox()){
+			//m.printDebug();
 			getScreenCoord(pt,&x,&y,&z);
-			cout << x << ":"<<y<<endl;
+			//cout << x << ":"<<y<<endl;
 			if(x>=0&&x<=resX&&y>=0&&y<=resY&&z<0){
 				mesh.push_back(m);
 				cout << m.name << " is valid" << endl;
@@ -459,91 +482,92 @@ void Camera::render(){
 		}
 	}
 
-	// Compute screen coords for each vertex in the world
-	vector<Point> screenCoords;
-	vector<bool> validVertex;
-	for(unsigned i=0; i<world.vertex.size(); i++){
-		float x,y,z;
-		bool validity=false;
-		getScreenCoord(world.vertex[i],&x,&y,&z);
-		// Clip points
-		if((z<0.0))validity=true;
-		screenCoords.push_back(Point(x,y,z,validity));
-	}
-	// Render points
-	if(dotMode){
-		for(unsigned i=1; i<screenCoords.size(); i++){
-			if(screenCoords[i].valid){
-				SDL_RenderDrawPoint(renderer,(int)screenCoords[i].x,(int)screenCoords[i].y);
-				//filledCircleRGBA(renderer,(int)x,(int)y,2,0x00,0x00,0x00,0xff);
-			}
+	for(Mesh&m : mesh){
+		// Compute screen coords for each vertex in the world
+		vector<Point> screenCoords;
+		for(Point&pt : m.vertex){
+			float x,y,z;
+			bool validity=false;
+			getScreenCoord(pt,&x,&y,&z);
+			// Clip points
+			if((z<0.0))validity=true;
+			screenCoords.push_back(Point(x,y,z,validity));
 		}
-	}
 
-	// Render snake
-	if(snakeMode){
-		for(unsigned i=1; i<screenCoords.size(); i++){
-			if(screenCoords[i].valid && screenCoords[i-1].valid){
-				SDL_RenderDrawLine(renderer,(int)screenCoords[i].x,(int)screenCoords[i].y,(int)screenCoords[i-1].x,(int)screenCoords[i-1].y);
-				//thickLineRGBA(renderer,(int)screenCoords[i].x,(int)screenCoords[i].y,(int)screenCoords[i-1].x,(int)screenCoords[i-1].y,3,0,0,0,0xff);
-			}
-		}
-	}
-
-	// Render wireframe
-	if(wireMode){
-		for(unsigned f=0; f<world.face.size(); f++){
-			for(unsigned v=1; v<world.face[f].edges.size(); v++){
-				if(screenCoords[world.face[f].edges[v]].valid && screenCoords[world.face[f].edges[v-1]].valid){
-					int vertex1 = world.face[f].edges[v];
-					int vertex2 = world.face[f].edges[v-1];
-					SDL_RenderDrawLine(renderer,(int)screenCoords[vertex1].x,(int)screenCoords[vertex1].y,(int)screenCoords[vertex2].x,(int)screenCoords[vertex2].y);
+		// Render points
+		if(dotMode){
+			for(Point&pt : screenCoords){
+				if(pt.valid){
+					SDL_RenderDrawPoint(renderer,(int)pt.x,(int)pt.y);
+					//filledCircleRGBA(renderer,(int)x,(int)y,2,0x00,0x00,0x00,0xff);
 				}
 			}
 		}
-	}
 
-	// Render polygon
-	if(polyMode){
-		vector<zBuffer> faceList;
-		// Create and sort faceList
-		for(unsigned f=0; f<world.face.size(); f++){
-			zBuffer currentFace;
-			vector<Sint16> x;
-			vector<Sint16> y;
-			vector<float> zbuff;
-			for(unsigned v=0; v<world.face[f].edges.size(); v++){
-				x.push_back((int)screenCoords[world.face[f].edges[v]].x);
-				y.push_back((int)screenCoords[world.face[f].edges[v]].y);
-				zbuff.push_back(screenCoords[world.face[f].edges[v]].z);
+		// Render snake
+		if(snakeMode){
+			for(unsigned i=1; i<screenCoords.size(); i++){
+				if(screenCoords[i].valid && screenCoords[i-1].valid){
+					SDL_RenderDrawLine(renderer,(int)screenCoords[i].x,(int)screenCoords[i].y,(int)screenCoords[i-1].x,(int)screenCoords[i-1].y);
+					//thickLineRGBA(renderer,(int)screenCoords[i].x,(int)screenCoords[i].y,(int)screenCoords[i-1].x,(int)screenCoords[i-1].y,3,0,0,0,0xff);
+				}
 			}
-			currentFace.x = x;
-			currentFace.y = y;
-			currentFace.z = *min_element(&zbuff[0],&zbuff[zbuff.size()]);
-
-			// Get face color
-			//world.getColor(f,&currentFace.r,&currentFace.g,&currentFace.b);
-			currentFace.r = (Sint16)(world.face[f].color[0]);
-			currentFace.g = (Sint16)(world.face[f].color[1]);
-			currentFace.b = (Sint16)(world.face[f].color[2]);
-
-			// Check validity : if one of the edges is out the screen => false
-			bool valid = true;
-			if(*(min_element(&x[0],&x[x.size()])) < 0)valid=false;
-			else if(*(max_element(&x[0],&x[x.size()]))>resX)valid=false;
-			else if(*(min_element(&y[0],&y[y.size()])) < 0)valid=false;
-			else if(*(max_element(&y[0],&y[y.size()]))>resY)valid=false;
-
-
-			if(currentFace.z<0 && valid)faceList.push_back(currentFace);
-			//else cout<<"Polygon reject"<<endl;
 		}
-		sort(&faceList[0],&faceList[faceList.size()]);
 
-		// Display faces
-		for(unsigned f=0; f<faceList.size(); f++){
-			filledPolygonRGBA(renderer,&faceList[f].x[0],&faceList[f].y[0],faceList[f].x.size(),faceList[f].r*2,faceList[f].g/2,faceList[f].b,0xff);
-			//filledPolygonRGBA(renderer,&faceList[f].x[0],&faceList[f].y[0],faceList[f].x.size(),rand(),rand(),rand(),0xff);
+		// Render wireframe
+		if(wireMode){
+			for(unsigned f=0; f<m.face.size(); f++){
+				for(unsigned v=1; v<m.face[f].edges.size(); v++){
+					if(screenCoords[m.face[f].edges[v]].valid && screenCoords[m.face[f].edges[v-1]].valid){
+						int vertex1 = m.face[f].edges[v];
+						int vertex2 = m.face[f].edges[v-1];
+						SDL_RenderDrawLine(renderer,(int)screenCoords[vertex1].x,(int)screenCoords[vertex1].y,(int)screenCoords[vertex2].x,(int)screenCoords[vertex2].y);
+					}
+				}
+			}
+		}
+
+		if(polyMode){
+			vector<zBuffer> faceList;
+			// Create and sort faceList
+			for(unsigned f=0; f<m.face.size(); f++){
+				zBuffer currentFace;
+				vector<Sint16> x;
+				vector<Sint16> y;
+				vector<float> zbuff;
+				for(unsigned v=0; v<m.face[f].edges.size(); v++){
+					x.push_back((int)screenCoords[m.face[f].edges[v]].x);
+					y.push_back((int)screenCoords[m.face[f].edges[v]].y);
+					zbuff.push_back(screenCoords[m.face[f].edges[v]].z);
+				}
+				currentFace.x = x;
+				currentFace.y = y;
+				currentFace.z = *min_element(&zbuff[0],&zbuff[zbuff.size()]);
+
+				// Get face color
+				//world.getColor(f,&currentFace.r,&currentFace.g,&currentFace.b);
+				currentFace.r = (Sint16)(m.face[f].color[0]);
+				currentFace.g = (Sint16)(m.face[f].color[1]);
+				currentFace.b = (Sint16)(m.face[f].color[2]);
+
+				// Check validity : if one of the edges is out the screen => false
+				bool valid = true;
+				if(*(min_element(&x[0],&x[x.size()])) < 0)valid=false;
+				else if(*(max_element(&x[0],&x[x.size()]))>resX)valid=false;
+				else if(*(min_element(&y[0],&y[y.size()])) < 0)valid=false;
+				else if(*(max_element(&y[0],&y[y.size()]))>resY)valid=false;
+
+
+				if(currentFace.z<0 && valid)faceList.push_back(currentFace);
+				//else cout<<"Polygon reject"<<endl;
+			}
+			sort(&faceList[0],&faceList[faceList.size()]);
+
+			// Display faces
+			for(unsigned f=0; f<faceList.size(); f++){
+				filledPolygonRGBA(renderer,&faceList[f].x[0],&faceList[f].y[0],faceList[f].x.size(),faceList[f].r*2,faceList[f].g/2,faceList[f].b,0xff);
+				//filledPolygonRGBA(renderer,&faceList[f].x[0],&faceList[f].y[0],faceList[f].x.size(),rand(),rand(),rand(),0xff);
+			}
 		}
 	}
 
