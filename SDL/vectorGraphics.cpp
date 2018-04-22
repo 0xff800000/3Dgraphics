@@ -105,18 +105,23 @@ public:
 	Point pos;
 	vector<Point> vertex;
 	vector<polygon> face;
-	Mesh(){
-		pos.x=0;
-		pos.y=0;
-		pos.z=0;
-		//box.push_back(8);
-	};
-	vector<Point> getBox(){return box;};
+	Mesh();
+	vector<Point>& getBox(){return box;};
 	virtual ~Mesh (){};
 	void computeBox();
 	void printDebug();
 private:
 	vector<Point> box;
+};
+
+Mesh::Mesh(){
+	pos.x=0;
+	pos.y=0;
+	pos.z=0;
+	//box.push_back(8);
+	for(int i=0; i<8; i++){
+		box.push_back(Point(0,0,0));
+	}
 };
 
 void Mesh::computeBox(){
@@ -135,14 +140,14 @@ void Mesh::computeBox(){
 	//cout <<"minmax:"<< x_min<<":" << x_max<<endl;
 
 	// Create box
-	box.push_back(Point(x_min,y_min,z_min));
-	box.push_back(Point(x_max,y_min,z_min));
-	box.push_back(Point(x_min,y_min,z_max));
-	box.push_back(Point(x_max,y_min,z_max));
-	box.push_back(Point(x_min,y_max,z_min));
-	box.push_back(Point(x_max,y_max,z_min));
-	box.push_back(Point(x_min,y_max,z_max));
-	box.push_back(Point(x_max,y_max,z_max));
+	// box.push_back(Point(x_min,y_min,z_min));
+	// box.push_back(Point(x_max,y_min,z_min));
+	// box.push_back(Point(x_min,y_min,z_max));
+	// box.push_back(Point(x_max,y_min,z_max));
+	// box.push_back(Point(x_min,y_max,z_min));
+	// box.push_back(Point(x_max,y_max,z_min));
+	// box.push_back(Point(x_min,y_max,z_max));
+	// box.push_back(Point(x_max,y_max,z_max));
 
 	// box[0] = Point(x_min,y_min,z_min);
 	// box[1] = Point(x_max,y_min,z_min);
@@ -152,6 +157,15 @@ void Mesh::computeBox(){
 	// box[5] = Point(x_max,y_max,z_min);
 	// box[6] = Point(x_min,y_max,z_max);
 	// box[7] = Point(x_max,y_max,z_max);
+
+	box[0].assign(x_min,y_min,z_min);
+	box[1].assign(x_max,y_min,z_min);
+	box[2].assign(x_min,y_min,z_max);
+	box[3].assign(x_max,y_min,z_max);
+	box[4].assign(x_min,y_max,z_min);
+	box[5].assign(x_max,y_max,z_min);
+	box[6].assign(x_min,y_max,z_max);
+	box[7].assign(x_max,y_max,z_max);
 
 	// Create box
 	// box[0].x=x_min;box[0].y=y_min;box[0].z=z_min;
@@ -425,12 +439,14 @@ void Camera::render(){
 	SDL_SetRenderDrawColor(renderer,255,255,255,255);
 	SDL_RenderClear(renderer);
 	SDL_SetRenderDrawColor(renderer,0,0,0,0);
-
+	world.initMesh();
 	// Get meshes in camera view
 	vector<Mesh> mesh;
 	for(Mesh m : world.getMeshes()){
 		float x,y,z;
 		cout << "Check the objects\n";
+		vector<Point> v = m.getBox();
+		cout << v.size() << endl;
 		for(Point pt : m.getBox()){
 			m.printDebug();
 			getScreenCoord(pt,&x,&y,&z);
