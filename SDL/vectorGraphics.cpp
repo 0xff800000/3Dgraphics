@@ -499,6 +499,15 @@ struct zBuffer{
 	}
 };
 
+struct zBufferMesh{
+	Mesh mesh;
+	float z;
+	bool operator<(const zBufferMesh & rhs) const
+	{
+		return z < rhs.z;
+	}
+};
+
 void Camera::render(){
 	if(!rendering)return;
 	rendering = false;
@@ -527,6 +536,26 @@ void Camera::render(){
 	}
 
 	// TODO : sort meshes according to the distance from the camera
+	vector<Mesh> orderedMesh;
+	vector<zBufferMesh> buffer;
+	for(Mesh m : mesh){
+		zBufferMesh buf;
+		buf.mesh = m;
+		float maxZ = -std::numeric_limits<float>::max();
+		for(Point pt : m.getBox()){
+			float x,y,z;
+			getScreenCoord(pt,&x,&y,&z);
+			if(z>maxZ)maxZ=z;
+		}
+		buf.z = maxZ;
+		buffer.push_back(buf);
+	}
+	sort(buffer.begin(),buffer.end());
+	for(zBufferMesh&m : buffer){
+		orderedMesh.push_back(m.mesh);
+	}
+	mesh = orderedMesh;
+
 
 	for(Mesh&m : mesh){
 		// Compute screen coords for each vertex in the world
