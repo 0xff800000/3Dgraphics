@@ -138,27 +138,8 @@ void Mesh::computeBox(){
 		if(y_max<v.y)y_max=v.y;
 		if(z_max<v.z)z_max=v.z;
 	}
-	//cout <<"minmax:"<< x_min<<":" << x_max<<endl;
 
 	// Create box
-	// box.push_back(Point(x_min,y_min,z_min));
-	// box.push_back(Point(x_max,y_min,z_min));
-	// box.push_back(Point(x_min,y_min,z_max));
-	// box.push_back(Point(x_max,y_min,z_max));
-	// box.push_back(Point(x_min,y_max,z_min));
-	// box.push_back(Point(x_max,y_max,z_min));
-	// box.push_back(Point(x_min,y_max,z_max));
-	// box.push_back(Point(x_max,y_max,z_max));
-
-	// box[0] = Point(x_min,y_min,z_min);
-	// box[1] = Point(x_max,y_min,z_min);
-	// box[2] = Point(x_min,y_min,z_max);
-	// box[3] = Point(x_max,y_min,z_max);
-	// box[4] = Point(x_min,y_max,z_min);
-	// box[5] = Point(x_max,y_max,z_min);
-	// box[6] = Point(x_min,y_max,z_max);
-	// box[7] = Point(x_max,y_max,z_max);
-
 	box[0].assign(x_min,y_min,z_min);
 	box[1].assign(x_max,y_min,z_min);
 	box[2].assign(x_min,y_min,z_max);
@@ -167,18 +148,7 @@ void Mesh::computeBox(){
 	box[5].assign(x_max,y_max,z_min);
 	box[6].assign(x_min,y_max,z_max);
 	box[7].assign(x_max,y_max,z_max);
-
-	// Create box
-	// box[0].x=x_min;box[0].y=y_min;box[0].z=z_min;
-	// box[1].x=x_max;box[1].y=y_min;box[1].z=z_min;
-	// box[2].x=x_min;box[2].y=y_min;box[2].z=z_max;
-	// box[3].x=x_max;box[3].y=y_min;box[3].z=z_max;
-	// box[4].x=x_min;box[4].y=y_max;box[4].z=z_min;
-	// box[5].x=x_max;box[5].y=y_max;box[5].z=z_min;
-	// box[6].x=x_min;box[6].y=y_max;box[6].z=z_max;
-	// box[7].x=x_max;box[7].y=y_max;box[7].z=z_max;
-	// for(Point pt : box)
-	// cout<<pt.x<<":"<<pt.y<<":"<<pt.z << endl;
+	
 }
 
 void Mesh::zeroEdge(){
@@ -189,17 +159,12 @@ void Mesh::zeroEdge(){
 			if(i<minI) minI = i;
 		}
 	}
-	//minI--;
-	//cout<<"Minimum :"<<minI<<endl;
 	// Substract the index
 	for(polygon&f : face){
 		for(int&i : f.edges){
 			i -= minI;
-			//cout<<i<<endl;
-			//if(i>vertex.size())cout<<"error"<<endl;
 		}
 	}
-	//cout<<"first:"<<face[0].edges[0]<<endl;
 }
 
 void Mesh::printDebug(){
@@ -296,7 +261,7 @@ void World::initMesh(){
 }
 
 void World::printDebug(){
-	printf("The world contains %d vertexes forming %d faces.\n",vertex.size(),face.size());
+	printf("The world contains %d vertexes forming %d faces.\n",(int)vertex.size(),(int)face.size());
 	// cout << "Vertex list:" << endl;
 	// for(unsigned int i=0;i<vertex.size(); i++){
 	// 	printf("%i : %f,%f,%f\n",i,vertex[i].x,vertex[i].y,vertex[i].z);
@@ -310,7 +275,7 @@ void World::printDebug(){
 	// 	cout<<endl;
 	// }
 
-	printf("The world contains %d objects.\n",meshes.size());
+	printf("The world contains %d objects.\n",(int)meshes.size());
 	cout << "Object list :" << endl;
 	for(Mesh m : meshes){
 		cout << m.name << ":v="<<m.vertex.size()<<endl;
@@ -341,13 +306,21 @@ private:
 	int resX,resY;
 	int facesToRender;
 	int fovCoef;
+	int timer;
+	bool rendering;
 
 	void getScreenCoord(Point&,float*,float*,float*);
 	void rotate2D(float,float,float,float*,float*);
 public:
 	Camera(Point&,int,int,SDL_Renderer*,int,int,World);
-	void update(SDL_Event*,float);
+	void update();
 	void render();
+	void wireModeToggle(){wireMode = !wireMode;};
+	void dotModeToggle(){dotMode = !dotMode;};
+	void polyModeToggle(){polyMode = !polyMode;};
+	void snakeModeToggle(){snakeMode = !snakeMode;};
+	void FOVinc(){fovCoef++;};
+	void FOVdec(){(fovCoef>0)?fovCoef--:0;};
 	Point getPos();
 };
 
@@ -367,58 +340,30 @@ Camera::Camera(Point&pos,int rot1,int rot2,SDL_Renderer*surface,int width,int he
 	fovCoef = 200;
 	cout << cx << " " << cy << endl;
 	facesToRender = 2;
+	timer = 0;
+	rendering = true;
 }
 
-void Camera::update(SDL_Event*ev, float dt){
-	float dist = dt*10;
+void Camera::update(){
+	int ticks = SDL_GetTicks();
+	int timePassed = ticks - timer;
+	timer = ticks;
+	float dist = timePassed/100.0;
 	float x = dist*sin(rotation[0]), z = dist*cos(rotation[0]);
 	// Keys
-	switch(ev->type){
-		case SDL_QUIT:{
-			return;
-		}
-		case SDL_KEYDOWN:{
-			switch(ev->key.keysym.sym){
-				//Camera rotation
-				case SDLK_RIGHT:rotation[0]+=0.1;break;
-				case SDLK_LEFT:rotation[0]-=0.1;break;
-				case SDLK_UP:rotation[1]+=0.1;break;
-				case SDLK_DOWN:rotation[1]-=0.1;break;
-
-				//Camera movement
-				case 'w':position.x += x;position.z += z;break;
-				case 's':position.x -= x;position.z -= z;break;
-				case 'd':position.x += z;position.z -= x;break;
-				case 'a':position.x -= z;position.z += x;break;
-				case 'e':position.y += dist;break;
-				case 'q':position.y -= dist;break;
-
-				// Add vertex
-				case 'r':world.vertex.push_back(Point(-position.x,-position.y,-position.z));break;
-
-				// Change rendering modes
-				case 'y':wireMode= !wireMode;break;
-				case 'x':dotMode= !dotMode;break;
-				case 'c':polyMode= !polyMode;break;
-				case 'v':snakeMode= !snakeMode;break;
-
-				// Render faces
-				case 'm':facesToRender++;break;
-				case 'n':(facesToRender>0)?facesToRender--:0;break;
-
-				// Change FOV
-				case 'k':fovCoef++;break;
-				case 'l':(fovCoef>0)?fovCoef--:0;break;
-
-				default:{
-					break;
-				}
-			}
-			//printf("Cam position : %f, %f, %f\n",position.x,position.y,position.z);
-			break;
-		}
-		default: break;
-	}
+	const Uint8 *state = SDL_GetKeyboardState(NULL);
+	//Camera movement
+	if(state[SDL_SCANCODE_W]){position.x += x;position.z += z;rendering = true;}
+	if(state[SDL_SCANCODE_S]){position.x -= x;position.z -= z;rendering = true;}
+	if(state[SDL_SCANCODE_D]){position.x += z;position.z -= x;rendering = true;}
+	if(state[SDL_SCANCODE_A]){position.x -= z;position.z += x;rendering = true;}
+	if(state[SDL_SCANCODE_Q]){position.y += dist;rendering = true;}
+	if(state[SDL_SCANCODE_E]){position.y -= dist;rendering = true;}
+	//Camera rotation
+	if(state[SDL_SCANCODE_RIGHT]){rotation[0]+=dist/2.0;rendering = true;}
+	if(state[SDL_SCANCODE_LEFT]){rotation[0]-=dist/2.0;rendering = true;}
+	if(state[SDL_SCANCODE_UP]){rotation[1]+=dist/2.0;rendering = true;}
+	if(state[SDL_SCANCODE_DOWN]){rotation[1]-=dist/2.0;rendering = true;}
 }
 
 void Camera::rotate2D(float posX, float posY, float angle,float*xo,float*yo){
@@ -446,7 +391,7 @@ Point Camera::getPos(){
 	return position;
 }
 
-typedef struct zBuffer{
+struct zBuffer{
 	vector<Sint16> x;
 	vector<Sint16> y;
 	float z;
@@ -458,7 +403,9 @@ typedef struct zBuffer{
 };
 
 void Camera::render(){
-	cout<<"@@@@@@@ Rendering @@@@@@@@"<<endl;
+	if(!rendering)return;
+	rendering = false;
+	//cout<<"@@@@@@@ Rendering @@@@@@@@"<<endl;
 	// Clear screen
 	SDL_SetRenderDrawColor(renderer,255,255,255,255);
 	SDL_RenderClear(renderer);
@@ -467,7 +414,7 @@ void Camera::render(){
 	vector<Mesh> mesh;
 	for(Mesh m : world.getMeshes()){
 		float x,y,z;
-		cout << "Check the objects\n";
+		//cout << "Check the objects\n";
 		vector<Point> v = m.getBox();
 		//cout << v.size() << endl;
 		for(Point& pt : m.getBox()){
@@ -476,11 +423,13 @@ void Camera::render(){
 			//cout << x << ":"<<y<<endl;
 			if(x>=0&&x<=resX&&y>=0&&y<=resY&&z<0){
 				mesh.push_back(m);
-				cout << m.name << " is valid" << endl;
+				//cout << m.name << " is valid" << endl;
 				break;
 			}
 		}
 	}
+
+	// TODO : sort meshes according to the distance from the camera
 
 	for(Mesh&m : mesh){
 		// Compute screen coords for each vertex in the world
@@ -578,7 +527,7 @@ void Camera::render(){
 
 void loop(SDL_Renderer*renderer,Camera cam){
 	SDL_Event ev;
-	cam.update(&ev,(1.0/100));
+	cam.update();
 	cam.render();
 	SDL_RenderPresent(renderer);
 
@@ -587,9 +536,9 @@ void loop(SDL_Renderer*renderer,Camera cam){
 		//SDL_RenderPresent(renderer);
 		//b1.print();
 
+		cam.update();
+		cam.render();
 		while(SDL_PollEvent(&ev)){
-			cam.update(&ev,(1.0/100));
-			cam.render();
 			// SDL_RenderPresent(renderer);
 			switch(ev.type){
 				case SDL_QUIT:{
@@ -603,11 +552,19 @@ void loop(SDL_Renderer*renderer,Camera cam){
 							clock_gettime(CLOCK_REALTIME, &t1);
 							cam.render();
 							clock_gettime(CLOCK_REALTIME, &t2);
-							cout << t2.tv_sec-t1.tv_sec << " sec";
+							cout << t2.tv_sec-t1.tv_sec << " sec ";
 							cout << t2.tv_nsec-t1.tv_nsec << " nsec" << endl;
 							break;
 						}
+						// Change rendering modes
+						case 'y':cam.wireModeToggle();break;
+						case 'x':cam.dotModeToggle();break;
+						case 'c':cam.polyModeToggle();break;
+						case 'v':cam.snakeModeToggle();break;
 
+						// Change FOV
+						case 'k':cam.FOVinc();break;
+						case 'l':cam.FOVdec();break;
 						default:{
 							break;
 						}
