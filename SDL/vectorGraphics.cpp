@@ -535,7 +535,7 @@ void Camera::render(){
 		}
 	}
 
-	// TODO : sort meshes according to the distance from the camera
+	// Sort meshes according to the distance from the camera
 	vector<Mesh> orderedMesh;
 	vector<zBufferMesh> buffer;
 	for(Mesh m : mesh){
