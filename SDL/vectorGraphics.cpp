@@ -47,6 +47,37 @@ public:
 
 	Point();
 	Point(float,float,float,bool);
+	Point operator+(const Point&pt){
+		Point res;
+		res.x = this->x + pt.x;
+		res.y = this->y + pt.y;
+		res.z = this->z + pt.z;
+		return res;
+	};
+
+	Point operator-(const Point&pt){
+		Point res;
+		res.x = this->x - pt.x;
+		res.y = this->y - pt.y;
+		res.z = this->z - pt.z;
+		return res;
+	};
+
+	Point operator/(const float&a){
+		Point res;
+		res.x = this->x / a;
+		res.y = this->y / a;
+		res.z = this->z / a;
+		return res;
+	};
+
+	Point operator*(const float&a){
+		Point res;
+		res.x = this->x * a;
+		res.y = this->y * a;
+		res.z = this->z * a;
+		return res;
+	};
 };
 
 void Point::rotX(float rad){
@@ -111,6 +142,12 @@ public:
 	void computeBox();
 	void printDebug();
 	void zeroEdge();
+
+	void rotX(float);
+	void rotY(float);
+	void rotZ(float);
+	void move(Point& pt);
+
 private:
 	vector<Point> box;
 };
@@ -148,7 +185,10 @@ void Mesh::computeBox(){
 	box[5].assign(x_max,y_max,z_min);
 	box[6].assign(x_min,y_max,z_max);
 	box[7].assign(x_max,y_max,z_max);
-	
+
+	// Compute center of box
+	pos = box[0] + (box[1]-box[0])/2.0 + (box[2]-box[0])/2.0 + (box[4]-box[0])/2.0;
+	cout << "Center : " << endl; pos.print();
 }
 
 void Mesh::zeroEdge(){
@@ -174,13 +214,62 @@ void Mesh::printDebug(){
 	}
 }
 
+void Mesh::rotX(float rad){
+	for(Point&v : vertex){
+		Point res = v - pos;
+		res.rotX(rad);
+		v = res + pos;
+	}
+	for(Point&v : box){
+		Point res = v - pos;
+		res.rotX(rad);
+		v = res + pos;
+	}
+}
+
+void Mesh::rotY(float rad){
+	for(Point&v : vertex){
+		Point res = v - pos;
+		res.rotY(rad);
+		v = res + pos;
+	}
+	for(Point&v : box){
+		Point res = v - pos;
+		res.rotY(rad);
+		v = res + pos;
+	}
+}
+
+void Mesh::rotZ(float rad){
+	for(Point&v : vertex){
+		Point res = v - pos;
+		res.rotZ(rad);
+		v = res + pos;
+	}
+	for(Point&v : box){
+		Point res = v - pos;
+		res.rotZ(rad);
+		v = res + pos;
+	}
+}
+
+void Mesh::move(Point& pt){
+	for(Point&v : vertex){
+		v = v + pt;
+	}
+	for(Point&v : box){
+		v = v + pt;
+	}
+	pos = pos + pt;
+}
+
 //###################################### World Class #######################################################
 
 
 class World{
 private:
-	vector<Mesh> meshes;
 public:
+	vector<Mesh> meshes;
 	void importMesh(string&,float);
 	void printDebug();
 	void initMesh();
@@ -350,6 +439,14 @@ void Camera::update(){
 	timer = ticks;
 	float dist = timePassed/100.0;
 	float x = dist*sin(rotation[0]), z = dist*cos(rotation[0]);
+
+	world.meshes[0].rotY(0.01);
+	world.meshes[0].rotX(0.01);
+	world.meshes[1].rotY(0.01);
+	world.meshes[2].rotZ(0.01);
+	Point mov = Point(0.1*sin(timer/1000.0),0,0);
+	world.meshes[3].move(mov);
+	rendering = true;
 	// Keys
 	const Uint8 *state = SDL_GetKeyboardState(NULL);
 	//Camera movement
