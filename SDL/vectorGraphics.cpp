@@ -130,6 +130,10 @@ typedef struct{
 	unsigned color[3];
 }polygon;
 
+int boxIndexes[12][2] = {
+	{0,1},{1,3},{3,2},{2,0},{0,4},{1,5},{3,7},{2,6},{4,5},{5,7},{7,6},{6,4}
+};
+
 class Mesh {
 public:
 	string name;
@@ -391,6 +395,7 @@ private:
 	bool wireMode;
 	bool polyMode;
 	bool snakeMode;
+	bool meshBox;
 	float cx,cy;
 	int resX,resY;
 	int facesToRender;
@@ -408,6 +413,7 @@ public:
 	void dotModeToggle(){dotMode = !dotMode;};
 	void polyModeToggle(){polyMode = !polyMode;};
 	void snakeModeToggle(){snakeMode = !snakeMode;};
+	void meshBoxToggle(){meshBox = !meshBox;};
 	void FOVinc(){fovCoef++;};
 	void FOVdec(){(fovCoef>0)?fovCoef--:0;};
 	Point getPos();
@@ -423,6 +429,7 @@ Camera::Camera(Point&pos,int rot1,int rot2,SDL_Renderer*surface,int width,int he
 	wireMode = true;
 	polyMode = true;
 	snakeMode = false;
+	meshBox = false;
 	resX = width; resY = height;
 	cx = width/2;
 	cy = height/2;
@@ -442,8 +449,8 @@ void Camera::update(){
 
 	world.meshes[0].rotY(0.01);
 	world.meshes[0].rotX(0.01);
-	world.meshes[1].rotY(0.01);
-	world.meshes[2].rotZ(0.01);
+	world.meshes[1].rotY(0.02);
+	world.meshes[2].rotZ(0.03);
 	Point mov = Point(0.1*sin(timer/1000.0),0,0);
 	world.meshes[3].move(mov);
 	rendering = true;
@@ -558,6 +565,7 @@ void Camera::render(){
 
 
 	for(Mesh&m : mesh){
+		SDL_SetRenderDrawColor(renderer,0,0,0,0);
 		// Compute screen coords for each vertex in the world
 		vector<Point> screenCoords;
 		for(Point&pt : m.vertex){
@@ -598,6 +606,24 @@ void Camera::render(){
 						int vertex2 = m.face[f].edges[v-1];
 						SDL_RenderDrawLine(renderer,(int)screenCoords[vertex1].x,(int)screenCoords[vertex1].y,(int)screenCoords[vertex2].x,(int)screenCoords[vertex2].y);
 					}
+				}
+			}
+		}
+
+		// Render mesh box
+		if(meshBox){
+			SDL_SetRenderDrawColor(renderer,0xff,0,0,0);
+			vector<Point> boxEdge;
+			for(Point pt : m.getBox()){
+				float x,y,z;
+				bool validity = false;
+				getScreenCoord(pt,&x,&y,&z);
+				if(z<0)validity = true;
+				boxEdge.push_back(Point(x,y,z,validity));
+			}
+			for(int i = 0; i<12; i++){
+				if(boxEdge[boxIndexes[i][0]].valid && boxEdge[boxIndexes[i][1]].valid){
+					SDL_RenderDrawLine(renderer,(int)boxEdge[boxIndexes[i][0]].x,(int)boxEdge[boxIndexes[i][0]].y,(int)boxEdge[boxIndexes[i][1]].x,(int)boxEdge[boxIndexes[i][1]].y);
 				}
 			}
 		}
@@ -687,6 +713,7 @@ void loop(SDL_Renderer*renderer,Camera cam){
 						case 'x':cam.dotModeToggle();break;
 						case 'c':cam.polyModeToggle();break;
 						case 'v':cam.snakeModeToggle();break;
+						case 'b':cam.meshBoxToggle();break;
 
 						// Change FOV
 						case 'k':cam.FOVinc();break;
