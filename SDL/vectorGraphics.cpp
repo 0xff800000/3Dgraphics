@@ -409,6 +409,7 @@ private:
 	bool polyMode;
 	bool snakeMode;
 	bool meshBox;
+	bool acidShader;
 	float cx,cy;
 	int resX,resY;
 	int facesToRender;
@@ -427,6 +428,7 @@ public:
 	void polyModeToggle(){polyMode = !polyMode;};
 	void snakeModeToggle(){snakeMode = !snakeMode;};
 	void meshBoxToggle(){meshBox = !meshBox;};
+	void acidShaderToggle(){acidShader = !acidShader;};
 	void FOVinc(){fovCoef++;};
 	void FOVdec(){(fovCoef>0)?fovCoef--:0;};
 	Point getPos();
@@ -443,6 +445,7 @@ Camera::Camera(Point&pos,int rot1,int rot2,SDL_Renderer*surface,int width,int he
 	polyMode = true;
 	snakeMode = false;
 	meshBox = false;
+	acidShader = false;
 	resX = width; resY = height;
 	cx = width/2;
 	cy = height/2;
@@ -588,22 +591,23 @@ void Camera::render(){
 			// Clip points
 			if((z<0.0))validity=true;
 			Point new_pt = Point(x,y,z,validity);
-			struct timeval tp;
-			gettimeofday(&tp, NULL);
-			static long int ms = 0;
-		   	if(tp.tv_usec%2){
-					ms++;
+			
+			if(acidShader){
+				struct timeval tp;
+				gettimeofday(&tp, NULL);
+				static long int ms = 0;
+		   		if(tp.tv_usec%2){
+						ms++;
+				}
+
+				new_pt -= Point(resX/2,resY/2,0);
+				//new_pt.rotX(sin(z/100.0*(float)ms/30000.0));
+				//new_pt.rotY(0.5*sin(z/100.0*(float)ms/30000.0));
+				//new_pt.rotZ(0.5*sin(z/300.0*(float)ms/30000.0));
+				new_pt.rotZ(0.5*sin((z/300.0)*((float)ms/10000.0)));
+				new_pt += Point(resX/2,resY/2,0);
 			}
 
-			//new_pt.rotX(sin(z/100.0*(float)ms/30000.0));
-			//new_pt.rotY(0.5*sin(z/100.0*(float)ms/30000.0));
-			//new_pt.rotZ(0.5*sin(z/300.0*(float)ms/30000.0));
-			new_pt -= Point(resX/2,resY/2,0);
-			new_pt.rotZ(sin((z/300.0)*((float)ms/30000.0)));
-			new_pt += Point(resX/2,resY/2,0);
-
-			//new_pt.rotY(sin(z/100.0*(float)ms/30000.0));
-			//new_pt.rotZ(z/10*sin((float)ms/30000.0));
 			screenCoords.push_back(new_pt);
 		}
 
@@ -744,6 +748,8 @@ void loop(SDL_Renderer*renderer,Camera cam){
 						case 'c':cam.polyModeToggle();break;
 						case 'v':cam.snakeModeToggle();break;
 						case 'b':cam.meshBoxToggle();break;
+						case 'm':cam.acidShaderToggle();break;
+						
 
 						// Change FOV
 						case 'k':cam.FOVinc();break;
