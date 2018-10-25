@@ -48,6 +48,13 @@ public:
 
 	Point();
 	Point(float,float,float,bool);
+	
+	bool operator==(const Point&pt){
+		return	(this->x == pt.x) &&
+				(this->y == pt.y) &&
+				(this->z == pt.z);
+	};
+
 	Point operator+(const Point&pt){
 		Point res;
 		res.x = this->x + pt.x;
@@ -648,11 +655,19 @@ void Camera::render(){
 
 		// Render wireframe
 		if(wireMode){
+			int line_drawn[screenCoords.size()] = {0};
 			for(unsigned f=0; f<m.face.size(); f++){
 				for(unsigned v=1; v<m.face[f].edges.size(); v++){
 					if(screenCoords[m.face[f].edges[v]].valid && screenCoords[m.face[f].edges[v-1]].valid){
 						int vertex1 = m.face[f].edges[v];
 						int vertex2 = m.face[f].edges[v-1];
+						if(line_drawn[vertex1] == 0 || line_drawn[vertex2] == 0 || line_drawn[vertex1] == f || line_drawn[vertex2] == f){
+							   line_drawn[vertex1] = f;
+							   line_drawn[vertex2] = f;
+						}
+						else{
+								break;
+						}
 						SDL_RenderDrawLine(renderer,(int)screenCoords[vertex1].x,(int)screenCoords[vertex1].y,(int)screenCoords[vertex2].x,(int)screenCoords[vertex2].y);
 					}
 				}
