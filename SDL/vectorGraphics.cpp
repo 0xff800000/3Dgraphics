@@ -13,6 +13,7 @@
 #include <cmath>
 #include <algorithm>
 #include <limits>
+#include <ctime>
 
 #include <unistd.h>
 #include <sys/time.h>
@@ -574,7 +575,21 @@ void Camera::render(){
 			getScreenCoord(pt,&x,&y,&z);
 			// Clip points
 			if((z<0.0))validity=true;
-			screenCoords.push_back(Point(x,y,z,validity));
+			Point new_pt = Point(x,y,z,validity);
+			struct timeval tp;
+			gettimeofday(&tp, NULL);
+			static long int ms = 0;
+		   	if(tp.tv_usec%2){
+					ms++;
+			}
+
+			cout << ms << endl;
+			//new_pt.rotX(sin(z/100.0*(float)ms/30000.0));
+			//new_pt.rotY(0.5*sin(z/100.0*(float)ms/30000.0));
+			new_pt.rotZ(0.5*sin(z/300.0*(float)ms/30000.0));
+			//new_pt.rotY(sin(z/100.0*(float)ms/30000.0));
+			//new_pt.rotZ(z/10*sin((float)ms/30000.0));
+			screenCoords.push_back(new_pt);
 		}
 
 		// Render points
