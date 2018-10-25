@@ -42,7 +42,7 @@ public:
 	void scale(float);
 
 	void print();
-	void assign(float,float,float);
+	void assign(float,float,float,bool);
 	bool disp2D();
 
 	Point();
@@ -108,8 +108,8 @@ void Point::print(){
 	cout<<"("<<this->x<<","<<this->y<<","<<this->z<<")"<<endl;
 }
 
-void Point::assign(float xV,float yV,float zV){
-	this->x=xV;this->y=yV;this->z=zV;
+void Point::assign(float xV,float yV,float zV,bool validity=false){
+	this->x=xV;this->y=yV;this->z=zV;this->valid=validity;
 }
 
 bool Point::disp2D(){
@@ -570,18 +570,25 @@ void Camera::render(){
 
 	// TODO : parallelize this for loop
 	// Possibly use omp directive on the inner loops
-#pragma omp parallel for
-	for(Mesh&m : mesh){
+//#pragma omp parallel for
+	for(unsigned i=0; i<mesh.size(); i++){
+		Mesh m = mesh[i];
 		SDL_SetRenderDrawColor(renderer,0,0,0,0);
 		// Compute screen coords for each vertex in the world
-		vector<Point> screenCoords;
-		for(Point&pt : m.vertex){
+		Point screenCoords[m.vertex.size()];
+		//vector<Point> screenCoords;
+		//vector<Point> screenCoords(m.vertex.size());
+#pragma omp parallel for 
+		for(unsigned v=0; v<m.vertex.size(); v++){
+			Point pt = m.vertex[v];
 			float x,y,z;
 			bool validity=false;
 			getScreenCoord(pt,&x,&y,&z);
 			// Clip points
 			if((z<0.0))validity=true;
-			screenCoords.push_back(Point(x,y,z,validity));
+			screenCoords[v].assign(x,y,z,validity);
+			//screenCoords.at(v) = Point(x,y,z,validity);
+			//screenCoords.push_back(Point(x,y,z,validity));
 		}
 
 		// Render points
@@ -596,7 +603,8 @@ void Camera::render(){
 
 		// Render snake
 		if(snakeMode){
-			for(unsigned i=1; i<screenCoords.size(); i++){
+			//for(unsigned i=1; i<screenCoords.size(); i++){
+			for(unsigned i=1; i<mesh.size(); i++){
 				if(screenCoords[i].valid && screenCoords[i-1].valid){
 					SDL_RenderDrawLine(renderer,(int)screenCoords[i].x,(int)screenCoords[i].y,(int)screenCoords[i-1].x,(int)screenCoords[i-1].y);
 					//thickLineRGBA(renderer,(int)screenCoords[i].x,(int)screenCoords[i].y,(int)screenCoords[i-1].x,(int)screenCoords[i-1].y,3,0,0,0,0xff);
@@ -606,6 +614,7 @@ void Camera::render(){
 
 		// Render wireframe
 		if(wireMode){
+#pragma omp parallel for
 			for(unsigned f=0; f<m.face.size(); f++){
 				for(unsigned v=1; v<m.face[f].edges.size(); v++){
 					if(screenCoords[m.face[f].edges[v]].valid && screenCoords[m.face[f].edges[v-1]].valid){
