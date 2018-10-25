@@ -319,6 +319,10 @@ void World::importMesh(string&path,float scale=1.0){
 					Point pt(x,y,z);
 					pt.scale(scale);
 					vertex.push_back(pt);
+					if(meshes.size()==0){
+							meshes.push_back(Mesh());
+							meshes.back().name = "Unknown mesh";
+					}
 					meshes.back().vertex.push_back(pt);
 				}
 				else if(strcmp(str,"f")==0){
