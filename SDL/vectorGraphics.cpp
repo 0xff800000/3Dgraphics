@@ -285,10 +285,13 @@ void Mesh::move(Point& pt){
 
 class World{
 private:
+		int timer;
 public:
+		World(){timer=0;};
 	vector<Mesh> meshes;
 	void importMesh(string&,float);
 	void printDebug();
+	void update();
 	void initMesh();
 	vector<Mesh> getMeshes(){return meshes;};
 	vector<Point> vertex;
@@ -393,6 +396,20 @@ void World::printDebug(){
 
 }
 
+void World::update(){
+	if(meshes.size()>=4){
+		int ticks = SDL_GetTicks();
+		int timePassed = ticks - timer;
+		timer = ticks;
+		meshes[0].rotY(timePassed*0.01);
+		meshes[0].rotX(timePassed*0.01);
+		meshes[1].rotY(timePassed*0.02);
+		meshes[2].rotZ(timePassed*0.03);
+		Point mov = Point(0.1*sin(timePassed*timer/1000.0),0,0);
+		meshes[3].move(mov);
+	}
+}
+
 //#############################################################################################
 
 
@@ -463,12 +480,6 @@ void Camera::update(){
 	float dist = timePassed/100.0;
 	float x = dist*sin(rotation[0]), z = dist*cos(rotation[0]);
 
-	world.meshes[0].rotY(0.01);
-	world.meshes[0].rotX(0.01);
-	world.meshes[1].rotY(0.02);
-	world.meshes[2].rotZ(0.03);
-	Point mov = Point(0.1*sin(timer/1000.0),0,0);
-	world.meshes[3].move(mov);
 	rendering = true;
 	// Keys
 	const Uint8 *state = SDL_GetKeyboardState(NULL);
@@ -711,7 +722,7 @@ void Camera::render(){
 
 //#############################################################################################
 
-void loop(SDL_Renderer*renderer,Camera cam){
+void loop(SDL_Renderer*renderer,Camera cam, World world){
 	SDL_Event ev;
 	cam.update();
 	cam.render();
@@ -721,7 +732,7 @@ void loop(SDL_Renderer*renderer,Camera cam){
 
 		//SDL_RenderPresent(renderer);
 		//b1.print();
-
+		world.update();
 		cam.update();
 		cam.render();
 		while(SDL_PollEvent(&ev)){
@@ -811,7 +822,7 @@ int main(int argc, char** argv) {
 	SDL_RenderPresent(renderer);
 	SDL_SetRenderDrawColor(renderer,255,255,255,255);
 
-	loop(renderer,camera);
+	loop(renderer,camera,world);
 
 	SDL_DestroyWindow(window);
 	SDL_Quit();
