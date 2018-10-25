@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -W -Wall -O3 -std=c++11 -g
+CFLAGS = -W -Wall -O3 -std=c++11 -g -fopenmp
 LDFLAGS = -lSDL2main -lSDL2 -lstdc++
 EXEC = vectorGraphics
 

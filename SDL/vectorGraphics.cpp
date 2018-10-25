@@ -525,11 +525,14 @@ void Camera::render(){
 	SDL_SetRenderDrawColor(renderer,0,0,0,0);
 	// Get meshes in camera view
 	vector<Mesh> mesh;
+	// TODO : parallelize this for loop
+	// Possibly use fixed vector mesh size to avoid critical section
 	for(Mesh m : world.getMeshes()){
 		float x,y,z;
 		//cout << "Check the objects\n";
-		vector<Point> v = m.getBox();
+		//vector<Point> v = m.getBox();
 		//cout << v.size() << endl;
+		// Compute if the mesh box is in the screen
 		for(Point& pt : m.getBox()){
 			//m.printDebug();
 			getScreenCoord(pt,&x,&y,&z);
@@ -545,6 +548,8 @@ void Camera::render(){
 	// Sort meshes according to the distance from the camera
 	vector<Mesh> orderedMesh;
 	vector<zBufferMesh> buffer;
+	// TODO : parallelize this for loop
+	// Possibly use fixed vector buffer size to avoid critical section
 	for(Mesh m : mesh){
 		zBufferMesh buf;
 		buf.mesh = m;
@@ -563,7 +568,9 @@ void Camera::render(){
 	}
 	mesh = orderedMesh;
 
-
+	// TODO : parallelize this for loop
+	// Possibly use omp directive on the inner loops
+#pragma omp parallel for
 	for(Mesh&m : mesh){
 		SDL_SetRenderDrawColor(renderer,0,0,0,0);
 		// Compute screen coords for each vertex in the world
