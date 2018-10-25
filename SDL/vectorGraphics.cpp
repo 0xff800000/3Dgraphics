@@ -55,6 +55,12 @@ public:
 		res.z = this->z + pt.z;
 		return res;
 	};
+	
+	void operator+=(const Point&pt){
+		this->x += pt.x;
+		this->y += pt.y;
+		this->z += pt.z;
+	};
 
 	Point operator-(const Point&pt){
 		Point res;
@@ -62,6 +68,12 @@ public:
 		res.y = this->y - pt.y;
 		res.z = this->z - pt.z;
 		return res;
+	};
+	
+	void operator-=(const Point&pt){
+		this->x -= pt.x;
+		this->y -= pt.y;
+		this->z -= pt.z;
 	};
 
 	Point operator/(const float&a){
@@ -583,10 +595,13 @@ void Camera::render(){
 					ms++;
 			}
 
-			cout << ms << endl;
 			//new_pt.rotX(sin(z/100.0*(float)ms/30000.0));
 			//new_pt.rotY(0.5*sin(z/100.0*(float)ms/30000.0));
-			new_pt.rotZ(0.5*sin(z/300.0*(float)ms/30000.0));
+			//new_pt.rotZ(0.5*sin(z/300.0*(float)ms/30000.0));
+			new_pt -= Point(resX/2,resY/2,0);
+			new_pt.rotZ(sin((z/300.0)*((float)ms/30000.0)));
+			new_pt += Point(resX/2,resY/2,0);
+
 			//new_pt.rotY(sin(z/100.0*(float)ms/30000.0));
 			//new_pt.rotZ(z/10*sin((float)ms/30000.0));
 			screenCoords.push_back(new_pt);
