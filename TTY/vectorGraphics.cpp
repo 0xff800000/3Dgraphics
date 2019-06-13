@@ -23,8 +23,8 @@
 #define M_PI_2  1.57079632679489661923
 #define M_PI_4  0.785398163397448309616
 */
-#define WIDTH 1600
-#define HEIGHT 900
+#define WIDTH 1280
+#define HEIGHT 1024
 
 using namespace std;
 
@@ -37,32 +37,41 @@ struct fbPix {
 };
 
 // Basic colors
-struct fbPix cRed = {0,0,0xff,0};
-struct fbPix cGreen = {0,0xff,0,0};
-struct fbPix cBlue = {0xff,0,0,0};
-struct fbPix cWhite = {0xff,0xff,0xff,0};
-struct fbPix cBlack = {0,0,0,0};
+struct fbPix cRed = {(char)0x00,(char)0x00,(char)0xff,(char)0x00};
+struct fbPix cGreen = {(char)0x00,(char)0xff,(char)0x00,(char)0x00};
+struct fbPix cBlue = {(char)0xff,(char)0x00,(char)0x00,(char)0x00};
+struct fbPix cWhite = {(char)0xff,(char)0xff,(char)0xff,(char)0x00};
+struct fbPix cBlack = {(char)0x00,(char)0x00,(char)0x00,(char)0x00};
 
 struct fbPix* colors[] = {&cRed,&cGreen,&cBlue,&cWhite,&cBlack};
 int cSize = sizeof(colors) / sizeof(colors[0]);
 
 // Screen resolution
-#define resW 1600
-#define resH 900
+#define resW WIDTH
+#define resH HEIGHT
 
 // Frame buffer data
 char fbData[resW*resH*4];
 int fbSize = sizeof(fbData) / sizeof(fbData[0]);
 int fd_fb0;
 
-void fbFlip() {
+void fbInit(){
     fd_fb0 = open("/dev/fb0", O_RDWR);
+    if(!fd_fb0)
+        perror("fbInit()");
+}
+
+void fbDeinit(){
+    close(fd_fb0);
+}
+
+void fbFlip() {
     if(fd_fb0 < 0){perror("open()");exit(-1);}
     if(0 > write(fd_fb0, fbData, fbSize)) {
         perror("fbFlip:write()");
         exit(-1);
     }
-    close(fd_fb0);
+    lseek(fd_fb0,0,SEEK_SET);
 }
 
 void fbSetPix(int x, int y, struct fbPix*color) {
@@ -768,10 +777,12 @@ int main(int argc, char** argv) {
     SDL_Renderer*renderer=SDL_CreateRenderer(window,-1,SDL_RENDERER_ACCELERATED);
 */
     // Create camera
-    Point camPos(0,0,-5);
-    Camera camera(camPos,0,0,/*renderer,*/width,height,world);
+    Point camPos(0,0,-5); Camera
+      camera(camPos,0,0,/*renderer,*/width,height,world);
 
     //Black screen
+    
+    fbInit();
     fbScreenFill(&cBlack);
     fbFlip();
 /*
@@ -785,6 +796,6 @@ int main(int argc, char** argv) {
     SDL_DestroyWindow(window);
 */
     //SDL_Quit();
-
+    fbDeinit();
     return 0;
 }
