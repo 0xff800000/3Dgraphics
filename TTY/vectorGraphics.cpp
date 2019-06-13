@@ -51,14 +51,23 @@ int cSize = sizeof(colors) / sizeof(colors[0]);
 #define resH HEIGHT
 
 // Frame buffer data
-char fbData[resW*resH*4];
-int fbSize = sizeof(fbData) / sizeof(fbData[0]);
+char *fbData;
+int fbSize;
 int fd_fb0;
 
 void fbInit(){
     fd_fb0 = open("/dev/fb0", O_RDWR);
-    if(!fd_fb0)
+    if(!fd_fb0){
         perror("fbInit()");
+        exit(-1);
+    }
+    fbData = (char*) malloc(resW*resH*4);
+    fbSize = resW*resH*4;
+    if(fbData == NULL){
+        perror("malloc screen()");
+        exit(-1);
+    }
+
 }
 
 void fbDeinit(){
@@ -761,41 +770,29 @@ int main(int argc, char** argv) {
     world.importMesh(path);
     //world.printDebug();
 
-    //freopen("CON", "w", stdout);
-
-    const int width=WIDTH,height=HEIGHT;
-/*
-    SDL_Window* window = SDL_CreateWindow
-                         (
-                             "Vector Graphics", SDL_WINDOWPOS_UNDEFINED,
-                             SDL_WINDOWPOS_UNDEFINED,
-                             width,
-                             height,
-                             SDL_WINDOW_SHOWN
-                         );
-
-    SDL_Renderer*renderer=SDL_CreateRenderer(window,-1,SDL_RENDERER_ACCELERATED);
-*/
+    int width=WIDTH,height=HEIGHT;
+    // Auto detect framebuffer resolution
+    int fb = open("/sys/class/graphics/fb0/modes", O_RDONLY);
+    if(fb != 0){
+        char line[32];
+        int w,h;
+        char s1='\0',*s2=NULL;
+        read(fb,line,32);
+        int count = sscanf(line, "%c%c%dx%d%s",&s1,&s1,&w,&h,s2);
+        if(count == 4){
+            printf("Resolution of fb0 : %dx%d\n",w,h);
+            width = w; height = h;
+        }
+    }
     // Create camera
-    Point camPos(0,0,-5); Camera
-      camera(camPos,0,0,/*renderer,*/width,height,world);
+    Point camPos(0,0,-5); 
+    Camera camera(camPos,0,0,/*renderer,*/width,height,world);
 
     //Black screen
-    
     fbInit();
     fbScreenFill(&cBlack);
     fbFlip();
-/*
-    SDL_SetRenderDrawColor(renderer,0,0,0,0);
-    SDL_RenderClear(renderer);
-    SDL_RenderPresent(renderer);
-    SDL_SetRenderDrawColor(renderer,255,255,255,255);
-*/
     loop(/*renderer,*/camera);
-/*
-    SDL_DestroyWindow(window);
-*/
-    //SDL_Quit();
     fbDeinit();
     return 0;
 }
