@@ -6,10 +6,13 @@ SRCS = src
 
 all: $(EXEC)
 
-$(EXEC): vectorGraphics.o SDL2_gfxPrimitives.o
+$(EXEC): vectorGraphics.o SDL2_gfxPrimitives.o point.o
 	$(CC) -o $(EXEC) $^ $(CFLAGS) $(LDFLAGS)
 
 vectorGraphics.o: $(SRCS)/vectorGraphics.cpp
+	$(CC) -c $< -o $@ $(CFLAGS) $(LDFLAGS)
+
+point.o: $(SRCS)/point.cpp
 	$(CC) -c $< -o $@ $(CFLAGS) $(LDFLAGS)
 
 SDL2_gfxPrimitives.o: $(SRCS)/SDL2_gfxPrimitives.c $(SRCS)/SDL2_gfxPrimitives.h

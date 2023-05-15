@@ -21,128 +21,12 @@
 #include <SDL2/SDL.h>
 
 #include "SDL2_gfxPrimitives.h"
+#include "point.hpp"
 
 #define WIDTH 400
 #define HEIGHT 400
 
 using namespace std;
-
-//###################################### Vector Class #######################################################
-
-class Point{
-public:
-	float x;
-	float y;
-	float z;
-
-	bool valid;
-
-	void rotX(float);
-	void rotY(float);
-	void rotZ(float);
-	void scale(float);
-
-	void print();
-	void assign(float,float,float);
-	bool disp2D();
-
-	Point();
-	Point(float,float,float,bool);
-	
-	bool operator==(const Point&pt){
-		return	(this->x == pt.x) &&
-				(this->y == pt.y) &&
-				(this->z == pt.z);
-	};
-
-	Point operator+(const Point&pt){
-		Point res;
-		res.x = this->x + pt.x;
-		res.y = this->y + pt.y;
-		res.z = this->z + pt.z;
-		return res;
-	};
-	
-	void operator+=(const Point&pt){
-		this->x += pt.x;
-		this->y += pt.y;
-		this->z += pt.z;
-	};
-
-	Point operator-(const Point&pt){
-		Point res;
-		res.x = this->x - pt.x;
-		res.y = this->y - pt.y;
-		res.z = this->z - pt.z;
-		return res;
-	};
-	
-	void operator-=(const Point&pt){
-		this->x -= pt.x;
-		this->y -= pt.y;
-		this->z -= pt.z;
-	};
-
-	Point operator/(const float&a){
-		Point res;
-		res.x = this->x / a;
-		res.y = this->y / a;
-		res.z = this->z / a;
-		return res;
-	};
-
-	Point operator*(const float&a){
-		Point res;
-		res.x = this->x * a;
-		res.y = this->y * a;
-		res.z = this->z * a;
-		return res;
-	};
-};
-
-void Point::rotX(float rad){
-	float tY=this->y;float tZ=this->z;
-	this->y=cos(rad)*tY-sin(rad)*tZ;
-	this->z=sin(rad)*tY+cos(rad)*tZ;
-}
-
-void Point::rotY(float rad){
-	float tX=this->x;float tZ=this->z;
-	this->x=cos(rad)*tX+sin(rad)*tZ;
-	this->z=-sin(rad)*tX+cos(rad)*tZ;
-}
-
-void Point::rotZ(float rad){
-	float tX=this->x;float tY=this->y;
-	this->x=cos(rad)*tX-sin(rad)*tY;
-	this->y=sin(rad)*tX+cos(rad)*tY;
-}
-
-void Point::scale(float coef){
-	this->x*=coef;
-	this->y*=coef;
-	this->z*=coef;
-}
-
-void Point::print(){
-	cout<<"("<<this->x<<","<<this->y<<","<<this->z<<")"<<endl;
-}
-
-void Point::assign(float xV,float yV,float zV){
-	this->x=xV;this->y=yV;this->z=zV;
-}
-
-bool Point::disp2D(){
-	return (this->x>=0&&this->y>=0)?true:false;
-}
-
-Point::Point(){
-	this->x=0.0;this->y=0.0;this->z=0.0;valid = false;
-}
-
-Point::Point(float xVal,float yVal,float zVal, bool v=false){
-	this->x=xVal;this->y=yVal;this->z=zVal;valid = v;
-}
 
 //###################################### Mesh Class #######################################################
 typedef struct{
