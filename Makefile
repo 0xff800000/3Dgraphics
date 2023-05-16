@@ -6,7 +6,7 @@ SRCS = src
 
 all: $(EXEC)
 
-$(EXEC): vectorGraphics.o SDL2_gfxPrimitives.o point.o mesh.o world.o
+$(EXEC): vectorGraphics.o SDL2_gfxPrimitives.o point.o mesh.o world.o camera.o
 	$(CC) -o $(EXEC) $^ $(CFLAGS) $(LDFLAGS)
 
 vectorGraphics.o: $(SRCS)/vectorGraphics.cpp
@@ -19,6 +19,9 @@ mesh.o: $(SRCS)/mesh.cpp
 	$(CC) -c $< -o $@ $(CFLAGS) $(LDFLAGS)
 
 world.o: $(SRCS)/world.cpp
+	$(CC) -c $< -o $@ $(CFLAGS) $(LDFLAGS)
+
+camera.o: $(SRCS)/camera.cpp
 	$(CC) -c $< -o $@ $(CFLAGS) $(LDFLAGS)
 
 SDL2_gfxPrimitives.o: $(SRCS)/SDL2_gfxPrimitives.c $(SRCS)/SDL2_gfxPrimitives.h
