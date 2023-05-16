@@ -7,7 +7,6 @@
 //============================================================================
 
 #include <iostream>
-#include <fstream>
 #include <string>
 #include <vector>
 #include <cmath>
@@ -23,148 +22,12 @@
 #include "SDL2_gfxPrimitives.h"
 #include "point.hpp"
 #include "mesh.hpp"
+#include "world.hpp"
 
 #define WIDTH 400
 #define HEIGHT 400
 
 using namespace std;
-
-//###################################### World Class #######################################################
-
-
-class World{
-private:
-		int timer;
-public:
-		World(){timer=0;};
-	vector<Mesh> meshes;
-	void importMesh(string&,float);
-	void printDebug();
-	void update();
-	void initMesh();
-	vector<Mesh> getMeshes(){return meshes;};
-	vector<Point> vertex;
-	vector<polygon> face;
-};
-
-void World::importMesh(string&path,float scale=1.0){
-	ifstream objFile;
-	objFile.open(&path[0]);
-	string line;
-	if(objFile.is_open()){
-		while(getline(objFile,line)){
-			char str[10];
-			float x,y,z;
-			if(sscanf(&line[0],"o %s",str)){
-				// New object definition
-				meshes.push_back(Mesh());
-				meshes.back().name = str;
-
-			}
-			else if(sscanf(&line[0],"%s %f %f %f",str,&x,&y,&z)){
-				if(strcmp(str,"v")==0){
-					// Vertex definition
-					//printf("Vertex : %f, %f, %f\n",x,y,z);
-					Point pt(x,y,z);
-					pt.scale(scale);
-					vertex.push_back(pt);
-					if(meshes.size()==0){
-							meshes.push_back(Mesh());
-							meshes.back().name = "Unknown mesh";
-					}
-					meshes.back().vertex.push_back(pt);
-				}
-				else if(strcmp(str,"f")==0){
-					// Face definition
-					polygon poly;
-					char delim[] = "//";
-					char*token;
-					int vertexIndex;
-					token = strtok(&line[0], delim);
-					while(token != NULL){
-						if(sscanf(token,"%*s %d",&vertexIndex)){
-							poly.edges.push_back(vertexIndex-1);
-						}
-						else break;
-						token = strtok(NULL, delim);
-
-					}
-					//cout << endl << endl;
-					poly.edges.push_back(poly.edges[0]);
-					/*
-					cout << "Line : "<<line<<endl;
-					for(unsigned i=0; i<poly.edges.size(); i++)printf("%d ,",poly.edges[i]);
-					cout << endl << endl;
-					*/
-					poly.color[0] = rand();
-					poly.color[1] = rand();
-					poly.color[2] = rand();
-					//cout<<poly.color<<endl;
-					face.push_back(poly);
-					meshes.back().face.push_back(poly);
-				}
-			}
-		}
-	}
-	else {
-		cout << "Error while opening " << path << endl;
-	}
-
-	initMesh();
-	objFile.close();
-}
-
-void World::initMesh(){
-	for(Mesh& m : meshes){
-		m.computeBox();
-		m.zeroEdge();
-		m.printDebug();
-	}
-}
-
-void World::printDebug(){
-	printf("The world contains %d vertexes forming %d faces.\n",(int)vertex.size(),(int)face.size());
-	// cout << "Vertex list:" << endl;
-	// for(unsigned int i=0;i<vertex.size(); i++){
-	// 	printf("%i : %f,%f,%f\n",i,vertex[i].x,vertex[i].y,vertex[i].z);
-	// }
-	// cout << "\n\nFace list:" << endl;
-	// for(unsigned int i=0;i<face.size(); i++){
-	// 	cout << i << " : ";
-	// 	for(unsigned int j=0; j<face[i].edges.size(); j++){
-	// 		cout<<face[i].edges[j]<<",";
-	// 	}
-	// 	cout<<endl;
-	// }
-
-	printf("The world contains %d objects.\n",(int)meshes.size());
-	cout << "Object list :" << endl;
-	for(Mesh m : meshes){
-		cout << m.name << ":v="<<m.vertex.size()<<endl;
-		for(auto pt : m.getBox())
-			cout<<pt.x<<":"<<pt.y<<":"<<pt.z << endl;
-
-	}
-	//cout<<meshes[0].box[0].x<<meshes[0].box[0].y<<meshes[0].box[0].z<<endl;
-
-}
-
-void World::update(){
-	if(meshes.size()>=4){
-		int ticks = SDL_GetTicks();
-		int timePassed = ticks - timer;
-		timer = ticks;
-		meshes[0].rotY(timePassed*0.01);
-		meshes[0].rotX(timePassed*0.01);
-		meshes[1].rotY(timePassed*0.02);
-		meshes[2].rotZ(timePassed*0.03);
-		Point mov = Point(0.1*sin(timePassed*timer/1000.0),0,0);
-		meshes[3].move(mov);
-	}
-}
-
-//#############################################################################################
-
 
 //######################################## Camera Class #####################################################
 
