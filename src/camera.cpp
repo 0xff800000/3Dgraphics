@@ -169,7 +169,7 @@ void Camera::render(){
 
         // Render wireframe
         if(wireMode){
-            int line_drawn[screenCoords.size()] = {0};
+            unsigned line_drawn[screenCoords.size()] = {0};
             for(unsigned f=0; f<m.face.size(); f++){
                 for(unsigned v=1; v<m.face[f].edges.size(); v++){
                     if(screenCoords[m.face[f].edges[v]].valid && screenCoords[m.face[f].edges[v-1]].valid){
