@@ -3,8 +3,6 @@
 #include <cstring>
 #include <cmath>
 
-#include <SDL2/SDL.h>
-
 #include "world.hpp"
 
 void World::importMesh(std::string&path,float scale=1.0){
@@ -93,7 +91,7 @@ void World::printDebug(){
 
 void World::update(){
     if(meshes.size()>=4){
-        int ticks = SDL_GetTicks(); // TODO: call back
+        int ticks = get_ticks_ms();
         int timePassed = ticks - timer;
         timer = ticks;
         meshes[0].rotY(timePassed*0.01);
@@ -105,3 +103,13 @@ void World::update(){
     }
 }
 
+void World::register_get_ticks(int (*cb)(void)) {
+    get_ticks_cb = cb;
+}
+
+int World::get_ticks_ms() {
+    if( !get_ticks_cb )
+        return 1;
+    else
+        return get_ticks_cb();
+}
