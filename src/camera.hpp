@@ -20,7 +20,6 @@ class Camera{
         bool acidShader;
         float cx,cy;
         int resX,resY;
-        int facesToRender;
         int fovCoef;
         int timer;
         bool rendering;
@@ -40,6 +39,14 @@ class Camera{
         void FOVinc(){fovCoef++;};
         void FOVdec(){(fovCoef>0)?fovCoef--:0;};
         Point getPos();
+
+        void move(Point&);
+        void move_x(float);
+        void move_y(float);
+        void move_z(float);
+
+        void rot_yaw(float);
+        void rot_pitch(float);
 };
 
 #endif // SRC_CAMERA_HPP

@@ -24,33 +24,12 @@ Camera::Camera(Point&pos,int rot1,int rot2,SDL_Renderer*surface,int width,int he
     cy = height/2;
     fovCoef = 200;
     std::cout << cx << " " << cy << std::endl;
-    facesToRender = 2;
     timer = 0;
     rendering = true;
 }
 
 void Camera::update(){
-    int ticks = SDL_GetTicks();
-    int timePassed = ticks - timer;
-    timer = ticks;
-    float dist = timePassed/100.0;
-    float x = dist*sin(rotation[0]), z = dist*cos(rotation[0]);
-
     rendering = true;
-    // Keys
-    const Uint8 *state = SDL_GetKeyboardState(NULL);
-    //Camera movement
-    if(state[SDL_SCANCODE_W]){position.x += x;position.z += z;rendering = true;}
-    if(state[SDL_SCANCODE_S]){position.x -= x;position.z -= z;rendering = true;}
-    if(state[SDL_SCANCODE_D]){position.x += z;position.z -= x;rendering = true;}
-    if(state[SDL_SCANCODE_A]){position.x -= z;position.z += x;rendering = true;}
-    if(state[SDL_SCANCODE_Q]){position.y += dist;rendering = true;}
-    if(state[SDL_SCANCODE_E]){position.y -= dist;rendering = true;}
-    //Camera rotation
-    if(state[SDL_SCANCODE_RIGHT]){rotation[0]+=dist/2.0;rendering = true;}
-    if(state[SDL_SCANCODE_LEFT]){rotation[0]-=dist/2.0;rendering = true;}
-    if(state[SDL_SCANCODE_UP]){rotation[1]+=dist/2.0;rendering = true;}
-    if(state[SDL_SCANCODE_DOWN]){rotation[1]-=dist/2.0;rendering = true;}
 }
 
 void Camera::rotate2D(float posX, float posY, float angle,float*xo,float*yo){
@@ -278,4 +257,33 @@ void Camera::render(){
     SDL_RenderPresent(renderer);
 }
 
-//#############################################################################################
+void Camera::move(Point&pt) {
+    position += pt;
+    rendering = true;
+}
+
+
+void Camera::move_x(float dist) {
+    float x = dist*sin(rotation[0]), z = dist*cos(rotation[0]);
+    Point pt(x,0,z);
+    move(pt);
+}
+
+void Camera::move_y(float dist) {
+    float z = -dist*sin(rotation[0]), x = dist*cos(rotation[0]);
+    Point pt(x,0,z);
+    move(pt);
+}
+
+void Camera::move_z(float dist) {
+    Point pt(0,dist,0);
+    move(pt);
+}
+
+void Camera::rot_yaw(float angle) {
+    rotation[0] += angle;
+}
+
+void Camera::rot_pitch(float angle) {
+    rotation[1] += angle;
+}
