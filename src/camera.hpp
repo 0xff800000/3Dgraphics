@@ -24,8 +24,11 @@ class Camera{
         int timer;
         bool rendering;
 
+        int (*get_time_ms_cb)(void);
+
         void getScreenCoord(Point&,float*,float*,float*);
         void rotate2D(float,float,float,float*,float*);
+        int get_time_ms();
     public:
         Camera(Point&,int,int,SDL_Renderer*,int,int,World);
         void update();
@@ -47,6 +50,8 @@ class Camera{
 
         void rot_yaw(float);
         void rot_pitch(float);
+
+        void register_get_time_ms(int (*)(void));
 };
 
 #endif // SRC_CAMERA_HPP

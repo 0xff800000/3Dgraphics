@@ -113,8 +113,8 @@ void loop(SDL_Renderer*renderer,Camera cam, World world){
 int main(int argc, char** argv) {
     // Load world
     World world;
-    auto tick_ms_cb = [](void) { return static_cast<int>(SDL_GetTicks()); };
-    world.register_get_ticks(tick_ms_cb);
+    auto world_tick_ms_cb = [](void) { return static_cast<int>(SDL_GetTicks()); };
+    world.register_get_ticks(world_tick_ms_cb);
     string path;
     float divider=0;
     cout << argv[1]<<endl;
@@ -148,6 +148,8 @@ int main(int argc, char** argv) {
     // Create camera
     Point camPos(0,0,-5);
     Camera camera(camPos,0,0,renderer,width,height,world);
+    auto cam_tick_ms_cb = [](void) { return static_cast<int>(SDL_GetTicks()); };
+    camera.register_get_time_ms(cam_tick_ms_cb);
 
     //Black screen
     SDL_SetRenderDrawColor(renderer,0,0,0,0);

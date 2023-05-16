@@ -1,8 +1,6 @@
 #include <vector>
 #include <algorithm>
 
-#include <sys/time.h> // TODO: remove dependency
-
 #include "SDL2_gfxPrimitives.h" // TODO: remove dependency
 
 #include "camera.hpp"
@@ -26,6 +24,8 @@ Camera::Camera(Point&pos,int rot1,int rot2,SDL_Renderer*surface,int width,int he
     std::cout << cx << " " << cy << std::endl;
     timer = 0;
     rendering = true;
+
+    get_time_ms_cb = NULL;
 }
 
 void Camera::update(){
@@ -133,12 +133,8 @@ void Camera::render(){
             Point new_pt = Point(x,y,z,validity);
 
             if(acidShader){
-                struct timeval tp;
-                gettimeofday(&tp, NULL);
                 static long int ms = 0;
-                if(tp.tv_usec%2){
-                    ms++;
-                }
+                ms +=  get_time_ms() % 2;
 
                 new_pt -= Point(resX/2,resY/2,0);
                 //new_pt.rotX(sin(z/100.0*(float)ms/30000.0));
@@ -286,4 +282,16 @@ void Camera::rot_yaw(float angle) {
 
 void Camera::rot_pitch(float angle) {
     rotation[1] += angle;
+}
+
+int Camera::get_time_ms()
+{
+    if(!get_time_ms_cb)
+        return ++timer;
+    else
+        return get_time_ms_cb();
+}
+
+void Camera::register_get_time_ms(int (*cb)(void)) {
+    get_time_ms_cb = cb;
 }
