@@ -1,4 +1,5 @@
 CC = g++
+EXTCFLAGS = -O3 -std=c++11 -g
 CFLAGS = -W -Wall -O3 -std=c++11 -g
 LDFLAGS = -lSDL2main -lSDL2 -lstdc++
 EXEC = vectorGraphics
@@ -28,7 +29,7 @@ screen_sdl.o: $(SRCS)/screen_sdl.cpp
 	$(CC) -c $< -o $@ $(CFLAGS) $(LDFLAGS)
 
 SDL2_gfxPrimitives.o: $(SRCS)/SDL2_gfxPrimitives.c $(SRCS)/SDL2_gfxPrimitives.h
-	$(CC) -c $< -o $@ $(CFLAGS) $(LDFLAGS)
+	$(CC) -c $< -o $@ $(EXTCFLAGS) $(LDFLAGS)
 
 
 clean:
