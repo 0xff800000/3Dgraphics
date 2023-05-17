@@ -1,7 +1,6 @@
 #include <vector>
 #include <algorithm>
-
-#include "SDL2_gfxPrimitives.h" // TODO: remove dependency
+#include <cmath>
 
 #include "camera.hpp"
 
@@ -59,8 +58,8 @@ Point Camera::getPos(){
 }
 
 struct zBuffer{
-    std::vector<Sint16> x;
-    std::vector<Sint16> y;
+    std::vector<int> x;
+    std::vector<int> y;
     float z;
     int r,g,b;
     bool operator<(const zBuffer & rhs) const
@@ -208,8 +207,8 @@ void Camera::render(){
             // Create and sort faceList
             for(unsigned f=0; f<m.face.size(); f++){
                 zBuffer currentFace;
-                std::vector<Sint16> x;
-                std::vector<Sint16> y;
+                std::vector<int> x;
+                std::vector<int> y;
                 std::vector<float> zbuff;
                 for(unsigned v=0; v<m.face[f].edges.size(); v++){
                     x.push_back((int)screenCoords[m.face[f].edges[v]].x);
@@ -222,9 +221,9 @@ void Camera::render(){
 
                 // Get face color
                 //world.getColor(f,&currentFace.r,&currentFace.g,&currentFace.b);
-                currentFace.r = (Sint16)(m.face[f].color[0]);
-                currentFace.g = (Sint16)(m.face[f].color[1]);
-                currentFace.b = (Sint16)(m.face[f].color[2]);
+                currentFace.r = (int)(m.face[f].color[0]);
+                currentFace.g = (int)(m.face[f].color[1]);
+                currentFace.b = (int)(m.face[f].color[2]);
 
                 // Check validity : if one of the edges is out the screen => false
                 bool valid = true;
