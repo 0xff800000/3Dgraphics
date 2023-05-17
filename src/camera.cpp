@@ -5,10 +5,11 @@
 
 #include "camera.hpp"
 
-Camera::Camera(Point&pos,int rot1,int rot2,SDL_Renderer*surface,int width,int height,World w){
+Camera::Camera(Point&pos,int rot1,int rot2,Screen&screen,int width,int height,World w)
+    : screen (screen)
+{
     position = pos;
     rotation[0] = rot1; rotation[1] = rot2;
-    renderer = surface;
     world = w;
     world.initMesh();
     dotMode = false;
@@ -81,9 +82,7 @@ void Camera::render(){
     if(!rendering)return;
     rendering = false;
     // Clear screen
-    SDL_SetRenderDrawColor(renderer,255,255,255,255);
-    SDL_RenderClear(renderer);
-    SDL_SetRenderDrawColor(renderer,0,0,0,0);
+    screen.clear();
     // Get meshes in camera view
     std::vector<Mesh> mesh;
     for(Mesh m : world.getMeshes()){
@@ -121,7 +120,7 @@ void Camera::render(){
 
 
     for(Mesh&m : mesh){
-        SDL_SetRenderDrawColor(renderer,0,0,0,0);
+        screen.set_draw_color(0,0,0,0);
         // Compute screen coords for each vertex in the world
         std::vector<Point> screenCoords;
         for(Point&pt : m.vertex){
@@ -151,8 +150,7 @@ void Camera::render(){
         if(dotMode){
             for(Point&pt : screenCoords){
                 if(pt.valid){
-                    SDL_RenderDrawPoint(renderer,(int)pt.x,(int)pt.y);
-                    //filledCircleRGBA(renderer,(int)x,(int)y,2,0x00,0x00,0x00,0xff);
+                    screen.draw_pixel(pt);
                 }
             }
         }
@@ -161,8 +159,7 @@ void Camera::render(){
         if(snakeMode){
             for(unsigned i=1; i<screenCoords.size(); i++){
                 if(screenCoords[i].valid && screenCoords[i-1].valid){
-                    SDL_RenderDrawLine(renderer,(int)screenCoords[i].x,(int)screenCoords[i].y,(int)screenCoords[i-1].x,(int)screenCoords[i-1].y);
-                    //thickLineRGBA(renderer,(int)screenCoords[i].x,(int)screenCoords[i].y,(int)screenCoords[i-1].x,(int)screenCoords[i-1].y,3,0,0,0,0xff);
+                    screen.draw_line(screenCoords[i],screenCoords[i-1]);
                 }
             }
         }
@@ -182,7 +179,7 @@ void Camera::render(){
                         else{
                             break;
                         }
-                        SDL_RenderDrawLine(renderer,(int)screenCoords[vertex1].x,(int)screenCoords[vertex1].y,(int)screenCoords[vertex2].x,(int)screenCoords[vertex2].y);
+                        screen.draw_line(screenCoords[vertex1],screenCoords[vertex2]);
                     }
                 }
             }
@@ -190,7 +187,7 @@ void Camera::render(){
 
         // Render mesh box
         if(meshBox){
-            SDL_SetRenderDrawColor(renderer,0xff,0,0,0);
+            screen.set_draw_color(0xff,0,0,0);
             std::vector<Point> boxEdge;
             for(Point pt : m.getBox()){
                 float x,y,z;
@@ -201,7 +198,7 @@ void Camera::render(){
             }
             for(int i = 0; i<12; i++){
                 if(boxEdge[boxIndexes[i][0]].valid && boxEdge[boxIndexes[i][1]].valid){
-                    SDL_RenderDrawLine(renderer,(int)boxEdge[boxIndexes[i][0]].x,(int)boxEdge[boxIndexes[i][0]].y,(int)boxEdge[boxIndexes[i][1]].x,(int)boxEdge[boxIndexes[i][1]].y);
+                    screen.draw_line(boxEdge[boxIndexes[i][0]],boxEdge[boxIndexes[i][1]]);
                 }
             }
         }
@@ -244,13 +241,17 @@ void Camera::render(){
 
             // Display faces
             for(unsigned f=0; f<faceList.size(); f++){
-                filledPolygonRGBA(renderer,&faceList[f].x[0],&faceList[f].y[0],faceList[f].x.size(),faceList[f].r*2,faceList[f].g/2,faceList[f].b,0xff);
-                //filledPolygonRGBA(renderer,&faceList[f].x[0],&faceList[f].y[0],faceList[f].x.size(),rand(),rand(),rand(),0xff);
+                std::vector<Point> points;
+                for(unsigned pp=0; pp<faceList[f].x.size(); pp++)
+                    points.push_back(Point(faceList[f].x[pp], faceList[f].y[pp],0));
+                screen.set_draw_color(faceList[f].r*2,faceList[f].g/2,faceList[f].b,0xff);
+                //screen.set_draw_color(rand(),rand(),rand(),0xff);
+                screen.draw_poly(points);
             }
         }
     }
 
-    SDL_RenderPresent(renderer);
+    screen.render();
 }
 
 void Camera::move(Point&pt) {

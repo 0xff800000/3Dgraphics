@@ -1,16 +1,15 @@
 #ifndef SRC_CAMERA_HPP
 #define SRC_CAMERA_HPP
 
-#include <SDL2/SDL.h> // TODO: remove dependency
-
 #include "point.hpp"
+#include "screen.hpp"
 #include "world.hpp"
 
 class Camera{
     private:
+        Screen& screen;
         Point position;
         float rotation[2];
-        SDL_Renderer*renderer;
         World world;
         bool dotMode;
         bool wireMode;
@@ -30,7 +29,7 @@ class Camera{
         void rotate2D(float,float,float,float*,float*);
         int get_time_ms();
     public:
-        Camera(Point&,int,int,SDL_Renderer*,int,int,World);
+        Camera(Point&,int,int,Screen&,int,int,World);
         void update();
         void render();
         void wireModeToggle(){wireMode = !wireMode;};

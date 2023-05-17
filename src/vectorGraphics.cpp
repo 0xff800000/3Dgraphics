@@ -24,6 +24,7 @@
 #include "mesh.hpp"
 #include "world.hpp"
 #include "camera.hpp"
+#include "screen_sdl.hpp"
 
 #define WIDTH 400
 #define HEIGHT 400
@@ -147,7 +148,8 @@ int main(int argc, char** argv) {
 
     // Create camera
     Point camPos(0,0,-5);
-    Camera camera(camPos,0,0,renderer,width,height,world);
+    ScreenSDL screen(renderer,width,height);
+    Camera camera(camPos,0,0,screen,width,height,world);
     auto cam_tick_ms_cb = [](void) { return static_cast<int>(SDL_GetTicks()); };
     camera.register_get_time_ms(cam_tick_ms_cb);
 
