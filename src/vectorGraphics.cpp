@@ -7,21 +7,12 @@
 //============================================================================
 
 #include <iostream>
-#include <string>
-#include <vector>
-#include <cmath>
-#include <algorithm>
-#include <limits>
-#include <ctime>
 
 #include <unistd.h>
 #include <sys/time.h>
 
 #include <SDL2/SDL.h>
 
-#include "SDL2_gfxPrimitives.h"
-#include "point.hpp"
-#include "mesh.hpp"
 #include "world.hpp"
 #include "camera.hpp"
 #include "screen_sdl.hpp"
