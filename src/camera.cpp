@@ -58,13 +58,25 @@ Point Camera::getPos(){
 }
 
 struct zBuffer{
-    std::vector<int> x;
-    std::vector<int> y;
+    std::vector<Point> points;
     float z;
     int r,g,b;
+    int max_x = std::numeric_limits<int>::min();
+    int max_y = std::numeric_limits<int>::min();
+    int min_x = std::numeric_limits<int>::max();
+    int min_y = std::numeric_limits<int>::max();
+
     bool operator<(const zBuffer & rhs) const
     {
         return z < rhs.z;
+    }
+
+    void push_back_point(Point&pt) {
+        points.push_back(pt);
+        if(max_x < pt.x) max_x = pt.x;
+        if(max_y < pt.y) max_y = pt.y;
+        if(min_x > pt.x) min_x = pt.x;
+        if(min_y > pt.y) min_y = pt.y;
     }
 };
 
@@ -207,16 +219,12 @@ void Camera::render(){
             // Create and sort faceList
             for(unsigned f=0; f<m.face.size(); f++){
                 zBuffer currentFace;
-                std::vector<int> x;
-                std::vector<int> y;
+                std::vector<Point> points;
                 std::vector<float> zbuff;
                 for(unsigned v=0; v<m.face[f].edges.size(); v++){
-                    x.push_back((int)screenCoords[m.face[f].edges[v]].x);
-                    y.push_back((int)screenCoords[m.face[f].edges[v]].y);
+                    currentFace.push_back_point(screenCoords[m.face[f].edges[v]]);
                     zbuff.push_back(screenCoords[m.face[f].edges[v]].z);
                 }
-                currentFace.x = x;
-                currentFace.y = y;
                 currentFace.z = *std::min_element(&zbuff[0],&zbuff[zbuff.size()]);
 
                 // Get face color
@@ -227,10 +235,10 @@ void Camera::render(){
 
                 // Check validity : if one of the edges is out the screen => false
                 bool valid = true;
-                if(*(std::min_element(&x[0],&x[x.size()])) < 0)valid=false;
-                else if(*(std::max_element(&x[0],&x[x.size()]))>resX)valid=false;
-                else if(*(std::min_element(&y[0],&y[y.size()])) < 0)valid=false;
-                else if(*(std::max_element(&y[0],&y[y.size()]))>resY)valid=false;
+                if(currentFace.min_x < 0)valid=false;
+                else if(currentFace.max_x>resX)valid=false;
+                else if(currentFace.min_y < 0)valid=false;
+                else if(currentFace.max_y>resY)valid=false;
 
 
                 if(currentFace.z<0 && valid)faceList.push_back(currentFace);
@@ -240,12 +248,9 @@ void Camera::render(){
 
             // Display faces
             for(unsigned f=0; f<faceList.size(); f++){
-                std::vector<Point> points;
-                for(unsigned pp=0; pp<faceList[f].x.size(); pp++)
-                    points.push_back(Point(faceList[f].x[pp], faceList[f].y[pp],0));
                 screen.set_draw_color(faceList[f].r*2,faceList[f].g/2,faceList[f].b,0xff);
                 //screen.set_draw_color(rand(),rand(),rand(),0xff);
-                screen.draw_poly(points);
+                screen.draw_poly(faceList[f].points);
             }
         }
     }
