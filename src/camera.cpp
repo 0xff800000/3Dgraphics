@@ -177,20 +177,17 @@ void Camera::render(){
 
         // Render wireframe
         if(wireMode){
-            unsigned line_drawn[screenCoords.size()] = {0};
+            std::vector<int> line_drawn[screenCoords.size()];
             for(unsigned f=0; f<m.face.size(); f++){
                 for(unsigned v=1; v<m.face[f].edges.size(); v++){
                     if(screenCoords[m.face[f].edges[v]].valid && screenCoords[m.face[f].edges[v-1]].valid){
                         int vertex1 = m.face[f].edges[v];
                         int vertex2 = m.face[f].edges[v-1];
-                        if(line_drawn[vertex1] == 0 || line_drawn[vertex2] == 0 || line_drawn[vertex1] == f || line_drawn[vertex2] == f){
-                            line_drawn[vertex1] = f;
-                            line_drawn[vertex2] = f;
-                        }
-                        else{
-                            break;
-                        }
+                        auto it = std::find(line_drawn[vertex1].begin(), line_drawn[vertex1].end(), vertex2);
+                        if(it != line_drawn[vertex1].end()) continue;
                         screen.draw_line(screenCoords[vertex1],screenCoords[vertex2]);
+                        line_drawn[vertex1].push_back(vertex2);
+                        line_drawn[vertex2].push_back(vertex1);
                     }
                 }
             }
