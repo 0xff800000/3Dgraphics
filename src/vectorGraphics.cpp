@@ -135,7 +135,12 @@ int main(int argc, char** argv) {
          height,
          SDL_WINDOW_SHOWN
         );
+
+#ifdef HW_ACCEL
     SDL_Renderer*renderer=SDL_CreateRenderer(window,-1,SDL_RENDERER_ACCELERATED);
+#else
+    SDL_Renderer*renderer=SDL_CreateRenderer(window,-1,SDL_RENDERER_SOFTWARE);
+#endif
 
     // Create camera
     Point camPos(0,0,-5);
